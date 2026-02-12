@@ -48,21 +48,29 @@ const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 
-const ADMIN_COOKIE = "sf_admin";
+// FUNÇÃO DE VERIFICAÇÃO DE ADMIN ATUALIZADA
+async function isAdmin(req: express.Request): Promise<boolean> {
+  const userId = getUserId(req);
+  if (!userId) return false;
 
-function isAdmin(req: express.Request): boolean {
-  const token = req.cookies?.[ADMIN_COOKIE];
-  if (!token) return false;
   try {
-    const decoded = jwt.verify(token, env.JWT_SECRET) as any;
-    return decoded?.role === "admin";
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("is_admin")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error || !user) return false;
+    return !!user.is_admin;
   } catch {
     return false;
   }
 }
 
-function requireAdmin(req: express.Request, res: express.Response, next: express.NextFunction) {
-  if (!isAdmin(req)) {
+// MIDDLEWARE DE ADMIN ATUALIZADO
+async function requireAdmin(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const isAdm = await isAdmin(req);
+  if (!isAdm) {
     res.status(401).json({ error: "unauthorized" });
     return;
   }
@@ -80,8 +88,9 @@ const DEFAULT_DRINKS = [
   "Refrigerante",
 ] as const;
 
-app.get("/api/auth/me", (req, res) => {
-  res.json({ authenticated: isAdmin(req) });
+app.get("/api/auth/me", async (req, res) => {
+  const isAdm = await isAdmin(req);
+  res.json({ authenticated: isAdm });
 });
 
 // ---------- Helpers ----------

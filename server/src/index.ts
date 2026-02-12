@@ -31,7 +31,7 @@ app.use(cors({
     
     callback(new Error('Not allowed by CORS'));
   },
-  credentials: true, // ESSENCIAL para permitir cookies
+  credentials: true,
 }));
 
 app.use(express.json({ limit: "1mb" }));
@@ -68,6 +68,17 @@ function requireAdmin(req: express.Request, res: express.Response, next: express
   }
   next();
 }
+
+const DEFAULT_DRINKS = [
+  "Gin",
+  "Vodka",
+  "Whisky",
+  "Cerveja",
+  "Vinho",
+  "Energético",
+  "Água",
+  "Refrigerante",
+] as const;
 
 app.get("/api/auth/me", (req, res) => {
   res.json({ authenticated: isAdmin(req) });
@@ -358,7 +369,7 @@ app.post("/api/admin/events", requireAdmin, async (req, res) => {
   if (create_default_drinks && event?.id) {
     const drinkRows = DEFAULT_DRINKS.map((name) => ({
       event_id: event.id,
-      type: "drink",
+      type: "drink" as const,
       name: String(name),
       is_available: true,
     }));

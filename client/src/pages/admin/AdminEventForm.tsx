@@ -239,6 +239,69 @@ export default function AdminEventForm() {
                 )}
               </div>
 
+              <div className="field" style={{ marginTop: '16px' }}>
+                <span>Galeria de Fotos (Até 3)</span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginTop: '8px' }}>
+                  {galleryUrls.map((url, index) => (
+                    <div key={index} style={{ 
+                      border: '2px dashed var(--border)', 
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '8px',
+                      minHeight: '120px',
+                      justifyContent: 'center'
+                    }}>
+                      {url ? (
+                        <div style={{ position: 'relative', width: '100%' }}>
+                          <img src={url} alt={`Galeria ${index + 1}`} style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '4px' }} />
+                          <button 
+                            className="btn secondary small" 
+                            style={{ position: 'absolute', top: '-8px', right: '-8px', padding: '4px', borderRadius: '50%', width: '24px', height: '24px' }}
+                            onClick={() => {
+                              const newUrls = [...galleryUrls];
+                              newUrls[index] = "";
+                              setGalleryUrls(newUrls);
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: 'center' }}>
+                          <input
+                            type="file"
+                            id={`gallery-${index}`}
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              try {
+                                setLoading(true);
+                                const uploadedUrl = await uploadImage(file);
+                                const newUrls = [...galleryUrls];
+                                newUrls[index] = uploadedUrl;
+                                setGalleryUrls(newUrls);
+                              } catch (err: any) {
+                                setError(String(err?.message ?? err));
+                              } finally {
+                                setLoading(false);
+                              }
+                            }}
+                          />
+                          <label htmlFor={`gallery-${index}`} style={{ cursor: 'pointer', fontSize: '12px', color: 'var(--primary)', fontWeight: 600 }}>
+                            + Foto {index + 1}
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {!editing && (
                 <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
                   <input

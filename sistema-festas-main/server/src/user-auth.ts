@@ -174,9 +174,27 @@ router.post("/logout", (req, res) => {
 });
 
 // Verificar se usuário está logado
-router.get("/me", (req, res) => {
+router.get("/me", async (req, res) => {
   const userId = getUserId(req);
   if (!userId) {
+    res.json({ authenticated: false });
+    return;
+  }
+
+  // Se o cookie existir, mas o usuário não existir no banco (DB reset/migração),
+  // limpe o cookie para não ficar "floodando" chamadas para /profile.
+  const { data: user, error } = await supabase
+    .from("users")
+    .select("id")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error || !user) {
+    res.clearCookie(USER_COOKIE, {
+      path: "/",
+      sameSite: "none",
+      secure: true,
+    });
     res.json({ authenticated: false });
     return;
   }
@@ -199,7 +217,14 @@ router.get("/profile", requireUserLogin, async (req, res) => {
     .maybeSingle();
 
   if (error || !user) {
-    res.status(404).json({ error: "Usuário não encontrado" });
+    // Token pode estar válido, mas o usuário não existe mais no banco.
+    // Limpa cookie para evitar loop de verificação no front.
+    res.clearCookie(USER_COOKIE, {
+      path: "/",
+      sameSite: "none",
+      secure: true,
+    });
+    res.status(401).json({ error: "unauthorized" });
     return;
   }
 

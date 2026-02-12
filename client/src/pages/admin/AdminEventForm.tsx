@@ -60,9 +60,9 @@ export default function AdminEventForm() {
         setCapacity(ev.capacity ? String(ev.capacity) : "");
         setRegistrationDeadline(toDatetimeLocal(ev.registration_deadline ?? null));
         setCoverImageUrl(ev.cover_image_url ?? "");
-        
-        const g = ev.gallery_image_urls || [];
-        setGalleryUrls([g[0] || "", g[1] || "", g[2] || ""]);
+        const g = (ev.gallery_image_urls ?? []) as any;
+        const arr = Array.isArray(g) ? g.map(String) : [];
+        setGalleryUrls([arr[0] ?? "", arr[1] ?? "", arr[2] ?? ""]);
       })
       .catch((e: any) => setError(String(e?.message ?? e)))
       .finally(() => setLoading(false));
@@ -77,12 +77,9 @@ export default function AdminEventForm() {
     fd.append("file", file);
     if (editing && id) fd.append("event_id", id);
 
-    // Usa a mesma lógica do api.ts para a URL base
-    const envBase = (import.meta as any).env.VITE_API_BASE || "";
-    const cleanBase = envBase.replace(/\/$/, "");
-    const uploadUrl = cleanBase ? `${cleanBase}/api/admin/upload` : "/api/admin/upload";
-
-    const r = await fetch(uploadUrl, {
+    // Corrigido para usar a URL base da API
+    const baseUrl = (import.meta as any).env.VITE_API_BASE || "";
+    const r = await fetch(`${baseUrl}/api/admin/upload`, {
       method: "POST",
       body: fd,
       credentials: "include",
@@ -112,8 +109,7 @@ export default function AdminEventForm() {
       if (!editing) payload.create_default_drinks = createDefaultDrinks;
 
       if (editing) {
-        // Alinhado com o servidor que usa PUT para atualização
-        await apiPost(`/admin/events/${id}`, payload, "PUT" as any);
+        await apiPost(`/admin/events/${id}`, payload, "PUT"); // Mudado de PATCH para PUT para coincidir com o servidor
         nav("/admin");
       } else {
         const r = await apiPost<{ id: string }>(`/admin/events`, payload);
@@ -243,87 +239,8 @@ export default function AdminEventForm() {
                 )}
               </div>
 
-              <div style={{ marginTop: '28px', paddingTop: '28px', borderTop: '1px solid var(--border)' }}>
-                <h3 style={{ marginBottom: '16px' }}>Galeria de Fotos</h3>
-                <p className="muted small" style={{ marginBottom: '16px' }}>Adicione até 3 fotos adicionais do seu evento.</p>
-                
-                <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
-                  {[0, 1, 2].map((idx) => (
-                    <div key={idx} style={{ position: 'relative' }}>
-                      {galleryUrls[idx] ? (
-                        <div style={{ position: 'relative' }}>
-                          <img
-                            src={galleryUrls[idx]}
-                            alt={`Galeria ${idx + 1}`}
-                            style={{
-                              width: '100%',
-                              height: '150px',
-                              borderRadius: 'var(--radius-sm)',
-                              objectFit: 'cover',
-                              border: '1px solid var(--border)'
-                            }}
-                          />
-                          <button
-                            className="btn ghost small"
-                            style={{
-                              position: 'absolute',
-                              top: '4px',
-                              right: '4px',
-                              background: 'rgba(0, 0, 0, 0.6)',
-                              color: '#fff',
-                              padding: '4px 8px'
-                            }}
-                            onClick={() => {
-                              const newGallery = [...galleryUrls];
-                              newGallery[idx] = "";
-                              setGalleryUrls(newGallery);
-                            }}
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ) : (
-                        <div style={{
-                          height: '150px',
-                          border: '2px dashed var(--border)',
-                          borderRadius: 'var(--radius-sm)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexDirection: 'column',
-                          gap: '8px'
-                        }}>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }}
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              try {
-                                setLoading(true);
-                                const url = await uploadImage(file);
-                                const newGallery = [...galleryUrls];
-                                newGallery[idx] = url;
-                                setGalleryUrls(newGallery);
-                              } catch (err: any) {
-                                setError(String(err?.message ?? err));
-                              } finally {
-                                setLoading(false);
-                              }
-                            }}
-                          />
-                          <span style={{ fontSize: '24px', opacity: 0.3 }}>+</span>
-                          <span style={{ fontSize: '12px', opacity: 0.5 }}>Foto {idx + 1}</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {!editing && (
-                <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: '8px', marginTop: '20px' }}>
+                <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
                   <input
                     type="checkbox"
                     id="defaultDrinks"

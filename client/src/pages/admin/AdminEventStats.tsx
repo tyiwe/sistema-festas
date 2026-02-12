@@ -9,6 +9,11 @@ type DrinkCount = {
   is_available: boolean;
 };
 
+type Stats = {
+  total_registrations: number;
+  drink_counts: DrinkCount[];
+};
+
 type Registration = {
   id: string;
   full_name: string;
@@ -17,57 +22,39 @@ type Registration = {
   allergies: string | null;
   notes: string | null;
   created_at: string;
-  registration_selections: Array<{
+  selections: Array<{
     option_id: string;
-    event_options: {
-      name: string;
-    };
+    name: string;
+    type: string;
   }>;
 };
 
-type StatsResponse = {
-  total: number;
+type RegistrationsResponse = {
   registrations: Registration[];
-  optionCounts: Record<string, number>;
 };
 
 export default function AdminEventStats() {
   const { id } = useParams();
   const eventId = String(id);
 
-  const [stats, setStats] = useState<StatsResponse | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"stats" | "registrations">("stats");
 
   useEffect(() => {
-    setLoading(true);
-    apiGet<StatsResponse>(`/admin/events/${eventId}/stats`)
-      .then((data) => {
-        setStats(data);
-        setError(null);
-      })
-      .catch((e: any) => {
-        console.error("Erro ao carregar stats:", e);
-        setError("Não foi possível carregar os dados do evento.");
-      })
-      .finally(() => setLoading(false));
+    apiGet<Stats>(`/admin/events/${eventId}/stats`)
+      .then(setStats)
+      .catch((e: any) => setError(String(e?.message ?? e)));
+
+    apiGet<RegistrationsResponse>(`/admin/events/${eventId}/registrations`)
+      .then((data) => setRegistrations(data.registrations))
+      .catch((e: any) => setError(String(e?.message ?? e)));
   }, [eventId]);
 
-  const drinkCounts = useMemo(() => {
-    if (!stats?.optionCounts) return [];
-    return Object.entries(stats.optionCounts).map(([name, count]) => ({
-      name,
-      count
-    }));
-  }, [stats]);
-
   const max = useMemo(() => {
-    const counts = drinkCounts.map(d => d.count);
-    return counts.length > 0 ? Math.max(1, ...counts) : 1;
-  }, [drinkCounts]);
-
-  const registrations = stats?.registrations ?? [];
+    return Math.max(1, ...(stats?.drink_counts ?? []).map((d) => d.count));
+  }, [stats]);
 
   return (
     <>
@@ -118,7 +105,7 @@ export default function AdminEventStats() {
             </button>
           </div>
 
-          {loading ? (
+          {!stats || registrations.length === 0 && activeTab === "registrations" ? (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
               <div style={{
                 width: '32px',
@@ -137,25 +124,37 @@ export default function AdminEventStats() {
               {/* STATS TAB */}
               {activeTab === "stats" && stats && (
                 <>
+                  {/* Stat Cards */}
                   <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
                     <div className="stat-card">
                       <div className="stat-label">Total de Inscritos</div>
-                      <div className="stat-value">{stats.total}</div>
+                      <div className="stat-value">{stats.total_registrations}</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-label">Opções Ativas</div>
+                      <div className="stat-value">{stats.drink_counts.filter(d => d.is_available).length}</div>
                     </div>
                   </div>
 
+                  {/* Drink Preferences Chart */}
                   <div className="form-card" style={{ maxWidth: '100%', marginTop: '12px' }}>
                     <h3 style={{ marginBottom: '28px' }}>Preferências de Consumo</h3>
+
                     <div className="stack tight" style={{ padding: 0, gap: '20px' }}>
-                      {drinkCounts.length === 0 ? (
+                      {stats.drink_counts.length === 0 ? (
                         <div className="empty-state" style={{ padding: '40px' }}>
                           <p className="muted">Nenhum dado de preferência disponível ainda.</p>
                         </div>
                       ) : (
-                        drinkCounts.map((d) => (
-                          <div key={d.name} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        stats.drink_counts.map((d) => (
+                          <div key={d.option_id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <div className="row between">
-                              <span style={{ fontWeight: 500, fontSize: '15px' }}>{d.name}</span>
+                              <div className="row" style={{ gap: '8px' }}>
+                                <span style={{ fontWeight: 500, fontSize: '15px' }}>{d.name}</span>
+                                {!d.is_available && (
+                                  <span className="status-badge draft" style={{ fontSize: '10px' }}>Inativo</span>
+                                )}
+                              </div>
                               <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--primary)' }}>{d.count}</span>
                             </div>
                             <div className="progress-bar-bg">
@@ -176,32 +175,141 @@ export default function AdminEventStats() {
               {activeTab === "registrations" && (
                 <div className="form-card" style={{ maxWidth: '100%', marginTop: '0' }}>
                   <h3 style={{ marginBottom: '28px' }}>Lista de Inscritos</h3>
+
                   {registrations.length === 0 ? (
                     <div className="empty-state" style={{ padding: '40px' }}>
                       <p className="muted">Nenhum inscrito ainda.</p>
                     </div>
                   ) : (
                     <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                      <table style={{
+                        width: '100%',
+                        borderCollapse: 'collapse',
+                        fontSize: '14px'
+                      }}>
                         <thead>
-                          <tr style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'var(--bg-alt)' }}>
-                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase' }}>Nome</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase' }}>E-mail</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase' }}>Telefone</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase' }}>Bebidas</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase' }}>Data</th>
+                          <tr style={{
+                            borderBottom: '1px solid var(--border)',
+                            backgroundColor: 'var(--bg-alt)'
+                          }}>
+                            <th style={{
+                              padding: '12px 16px',
+                              textAlign: 'left',
+                              fontWeight: 600,
+                              color: 'var(--text-muted)',
+                              fontSize: '12px',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em'
+                            }}>Nome</th>
+                            <th style={{
+                              padding: '12px 16px',
+                              textAlign: 'left',
+                              fontWeight: 600,
+                              color: 'var(--text-muted)',
+                              fontSize: '12px',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em'
+                            }}>E-mail</th>
+                            <th style={{
+                              padding: '12px 16px',
+                              textAlign: 'left',
+                              fontWeight: 600,
+                              color: 'var(--text-muted)',
+                              fontSize: '12px',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em'
+                            }}>Telefone</th>
+                            <th style={{
+                              padding: '12px 16px',
+                              textAlign: 'left',
+                              fontWeight: 600,
+                              color: 'var(--text-muted)',
+                              fontSize: '12px',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em'
+                            }}>Bebidas</th>
+                            <th style={{
+                              padding: '12px 16px',
+                              textAlign: 'left',
+                              fontWeight: 600,
+                              color: 'var(--text-muted)',
+                              fontSize: '12px',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em'
+                            }}>Alergias</th>
+                            <th style={{
+                              padding: '12px 16px',
+                              textAlign: 'left',
+                              fontWeight: 600,
+                              color: 'var(--text-muted)',
+                              fontSize: '12px',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em'
+                            }}>Data</th>
                           </tr>
                         </thead>
                         <tbody>
                           {registrations.map((reg, idx) => (
-                            <tr key={reg.id} style={{ borderBottom: '1px solid var(--border)', backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(0, 0, 0, 0.01)' }}>
-                              <td style={{ padding: '16px' }}>{reg.full_name}</td>
-                              <td style={{ padding: '16px' }}>{reg.email}</td>
-                              <td style={{ padding: '16px' }}>{reg.phone}</td>
-                              <td style={{ padding: '16px' }}>
-                                {reg.registration_selections?.map(s => s.event_options?.name).join(", ") || "-"}
+                            <tr
+                              key={reg.id}
+                              style={{
+                                borderBottom: '1px solid var(--border)',
+                                backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(0, 0, 0, 0.01)',
+                                transition: 'background-color 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                (e.currentTarget as HTMLTableRowElement).style.backgroundColor = 'var(--bg-alt)';
+                              }}
+                              onMouseLeave={(e) => {
+                                (e.currentTarget as HTMLTableRowElement).style.backgroundColor = idx % 2 === 0 ? 'transparent' : 'rgba(0, 0, 0, 0.01)';
+                              }}
+                            >
+                              <td style={{ padding: '16px', fontWeight: 500 }}>{reg.full_name}</td>
+                              <td style={{ padding: '16px', color: 'var(--text-muted)' }}>
+                                <a href={`mailto:${reg.email}`} style={{ color: 'var(--primary)', textDecoration: 'none' }}>
+                                  {reg.email}
+                                </a>
                               </td>
-                              <td style={{ padding: '16px' }}>{new Date(reg.created_at).toLocaleDateString()}</td>
+                              <td style={{ padding: '16px', color: 'var(--text-muted)' }}>
+                                <a href={`tel:${reg.phone}`} style={{ color: 'var(--primary)', textDecoration: 'none' }}>
+                                  {reg.phone}
+                                </a>
+                              </td>
+                              <td style={{ padding: '16px' }}>
+                                {reg.selections.length === 0 ? (
+                                  <span className="status-badge draft">Nenhuma</span>
+                                ) : (
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                    {reg.selections.map((sel) => (
+                                      <span
+                                        key={sel.option_id}
+                                        style={{
+                                          padding: '4px 10px',
+                                          borderRadius: '6px',
+                                          background: 'rgba(0, 113, 227, 0.1)',
+                                          color: 'var(--primary)',
+                                          fontSize: '12px',
+                                          fontWeight: 500
+                                        }}
+                                      >
+                                        {sel.name}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </td>
+                              <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '13px' }}>
+                                {reg.allergies ? (
+                                  <span title={reg.allergies} style={{ cursor: 'help' }}>
+                                    {reg.allergies.length > 20 ? reg.allergies.substring(0, 20) + '...' : reg.allergies}
+                                  </span>
+                                ) : (
+                                  <span style={{ opacity: 0.5 }}>—</span>
+                                )}
+                              </td>
+                              <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '13px' }}>
+                                {new Date(reg.created_at).toLocaleDateString('pt-BR')}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -210,6 +318,25 @@ export default function AdminEventStats() {
                   )}
                 </div>
               )}
+
+              {/* Actions */}
+              <div className="row" style={{ marginTop: '20px', gap: '12px' }}>
+                <Link className="btn secondary" style={{ flex: 1, textAlign: 'center' }} to="/admin">
+                  Voltar para Eventos
+                </Link>
+                <a
+                  className="btn ghost"
+                  style={{ flex: 1, textAlign: 'center' }}
+                  href={`/api/admin/events/${eventId}/registrations`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Exportar Dados (JSON)
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginLeft: '6px' }}>
+                    <path d="M4 2H10V8M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </a>
+              </div>
             </div>
           )}
         </main>

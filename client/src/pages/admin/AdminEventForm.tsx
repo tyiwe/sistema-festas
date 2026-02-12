@@ -77,7 +77,9 @@ export default function AdminEventForm() {
     fd.append("file", file);
     if (editing && id) fd.append("event_id", id);
 
-    const r = await fetch(`/api/admin/upload`, {
+    // Corrigido para usar a URL base da API
+    const baseUrl = (import.meta as any).env.VITE_API_BASE || "";
+    const r = await fetch(`${baseUrl}/api/admin/upload`, {
       method: "POST",
       body: fd,
       credentials: "include",
@@ -107,11 +109,11 @@ export default function AdminEventForm() {
       if (!editing) payload.create_default_drinks = createDefaultDrinks;
 
       if (editing) {
-        await apiPost(`/admin/events/${id}`, payload, "PATCH");
+        await apiPost(`/admin/events/${id}`, payload, "PUT"); // Mudado de PATCH para PUT para coincidir com o servidor
         nav("/admin");
       } else {
-        const r = await apiPost<{ event: EventRow }>(`/admin/events`, payload);
-        nav(`/admin/events/${r.event.id}/options`);
+        const r = await apiPost<{ id: string }>(`/admin/events`, payload);
+        nav(`/admin/events/${r.id}/options`);
       }
     } catch (e: any) {
       setError(String(e?.message ?? e));
@@ -237,114 +239,36 @@ export default function AdminEventForm() {
                 )}
               </div>
 
-              <div style={{ marginTop: '28px', paddingTop: '28px', borderTop: '1px solid var(--border)' }}>
-                <h3 style={{ marginBottom: '16px' }}>Galeria de Fotos</h3>
-                <p className="muted small" style={{ marginBottom: '16px' }}>Adicione até 3 fotos adicionais do seu evento (além da capa).</p>
-                
-                <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
-                  {[0, 1, 2].map((idx) => (
-                    <div key={idx} style={{ position: 'relative' }}>
-                      {galleryUrls[idx] ? (
-                        <div style={{ position: 'relative' }}>
-                          <img
-                            src={galleryUrls[idx]}
-                            alt={`Galeria ${idx + 1}`}
-                            style={{
-                              width: '100%',
-                              height: '150px',
-                              borderRadius: 'var(--radius-sm)',
-                              objectFit: 'cover',
-                              border: '1px solid var(--border)'
-                            }}
-                          />
-                          <button
-                            className="btn ghost small"
-                            style={{
-                              position: 'absolute',
-                              top: '4px',
-                              right: '4px',
-                              background: 'rgba(0, 0, 0, 0.6)',
-                              color: '#ff3b30',
-                              padding: '4px 8px',
-                              fontSize: '12px',
-                              borderRadius: '6px',
-                              border: 'none',
-                              cursor: 'pointer'
-                            }}
-                            onClick={() => {
-                              const newGallery = [...galleryUrls];
-                              newGallery[idx] = "";
-                              setGalleryUrls(newGallery);
-                            }}
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ) : (
-                        <label
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '100%',
-                            height: '150px',
-                            borderRadius: 'var(--radius-sm)',
-                            border: '2px dashed var(--border)',
-                            cursor: 'pointer',
-                            background: 'var(--bg-alt)',
-                            transition: 'all 0.2s ease',
-                            fontSize: '24px',
-                            color: 'var(--text-muted)'
-                          }}
-                        >
-                          <input
-                            type="file"
-                            accept="image/*"
-                            style={{ display: 'none' }}
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              try {
-                                setLoading(true);
-                                const url = await uploadImage(file);
-                                const newGallery = [...galleryUrls];
-                                newGallery[idx] = url;
-                                setGalleryUrls(newGallery);
-                              } catch (err: any) {
-                                setError(String(err?.message ?? err));
-                              } finally {
-                                setLoading(false);
-                              }
-                            }}
-                          />
-                          +
-                        </label>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {!editing && (
-                <div className="row" style={{ marginTop: '20px' }}>
+                <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
                   <input
                     type="checkbox"
                     id="defaultDrinks"
                     checked={createDefaultDrinks}
                     onChange={(e) => setCreateDefaultDrinks(e.target.checked)}
-                    style={{ width: 'auto', accentColor: 'var(--primary)' }}
                   />
-                  <label htmlFor="defaultDrinks" className="small muted" style={{ cursor: 'pointer' }}>
-                    Criar lista padrão de bebidas automaticamente
+                  <label htmlFor="defaultDrinks" style={{ fontSize: '14px', cursor: 'pointer' }}>
+                    Criar lista de bebidas padrão automaticamente
                   </label>
                 </div>
               )}
 
-              <div className="row" style={{ marginTop: '24px', gap: '12px' }}>
-                <button className="btn primary" style={{ flex: 1 }} onClick={save} disabled={!canSave || loading}>
-                  {loading ? "Salvando..." : editing ? "Salvar Alterações" : "Criar Evento"}
+              <div style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
+                <button
+                  className="btn primary large"
+                  style={{ flex: 1 }}
+                  disabled={!canSave || loading}
+                  onClick={save}
+                >
+                  {loading ? "Salvando..." : editing ? "Atualizar Evento" : "Criar Evento"}
                 </button>
-                <Link className="btn secondary" style={{ flex: 1, textAlign: 'center' }} to="/admin">Cancelar</Link>
+                <button
+                  className="btn secondary large"
+                  onClick={() => nav("/admin")}
+                  disabled={loading}
+                >
+                  Cancelar
+                </button>
               </div>
             </div>
           </div>

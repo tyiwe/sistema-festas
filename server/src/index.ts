@@ -56,6 +56,14 @@ app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 app.use("/api/user", userAuthRouter);
 
+// Middleware para evitar cache nas rotas de admin auth
+app.use("/api/auth", (req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  next();
+});
+
 // Upload de imagens
 const upload = multer({
   storage: multer.memoryStorage(),

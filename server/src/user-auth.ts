@@ -6,6 +6,15 @@ import { createClient } from "@supabase/supabase-js";
 import { env } from "./env.js";
 
 const router = express.Router();
+
+// Middleware para evitar cache em todas as rotas de autenticação
+router.use((req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  next();
+});
+
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
@@ -181,7 +190,6 @@ router.post("/logout", (req, res) => {
 
 // Verificar se usuário está logado
 router.get("/me", async (req, res) => {
-  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   const userId = getUserId(req);
   if (!userId) {
     res.json({ authenticated: false });

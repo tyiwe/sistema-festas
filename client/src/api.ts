@@ -8,7 +8,11 @@ const API_BASE = (() => {
 })();
 
 async function apiSend<T>(method: string, path: string, body?: any): Promise<T> {
-  const res = await fetch(API_BASE + path, {
+  // Adiciona um timestamp para evitar cache do navegador (importante para auth)
+  const separator = path.includes("?") ? "&" : "?";
+  const url = `${API_BASE}${path}${separator}t=${Date.now()}`;
+
+  const res = await fetch(url, {
     method,
     credentials: "include",
     headers: { "Content-Type": "application/json" },

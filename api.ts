@@ -1,19 +1,9 @@
-import { env } from "../env";
-
-// Em dev o Vite faz proxy de /api -> http://localhost:3001 (vite.config.ts).
-// Em produção, defina VITE_API_BASE (ex.: https://seu-backend.onrender.com)
-// ou deixe vazio para usar o mesmo domínio ("/api").
 const API_BASE = (() => {
   const origin = (import.meta as any).env?.VITE_API_BASE as string | undefined;
-  // Se a VITE_API_BASE já for uma URL completa, use-a diretamente.
-  // Caso contrário, adicione /api.
-  if (origin && origin.startsWith("http")) {
-    return origin.replace(/\/$/, ""); // Remove barra final se houver
-  } else if (origin) {
-    return `${origin.replace(/\/$/, "")}/api`; // Adiciona /api se for um caminho relativo
-  } else {
-    return "/api"; // Padrão para desenvolvimento local com proxy
-  }
+  // Em produção, VITE_API_BASE DEVE ser a URL completa do backend (ex: https://seu-backend.onrender.com).
+  // Em desenvolvimento, pode ser '/api' para usar o proxy do Vite.
+  // Remove a barra final se houver.
+  return origin ? origin.replace(/\/$/, "") : "/api";
 })();
 
 async function apiSend<T>(method: string, path: string, body?: any): Promise<T> {

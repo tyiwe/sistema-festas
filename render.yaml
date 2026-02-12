@@ -1,5 +1,4 @@
 services:
-  # Backend API
   - type: web
     name: sistema-festas-backend
     env: node

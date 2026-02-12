@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { apiGet, apiPost } from "../api";
 import Header from "../components/Header";
 
@@ -42,8 +42,14 @@ export default function UserAuth() {
         password: loginPassword,
       });
       navigate("/my-registrations");
+      window.location.reload(); // Garante que o Header atualize o estado de admin
     } catch (err: any) {
-      setError(err?.message || "Erro ao fazer login");
+      // Mensagem amigável para erro de login
+      if (err?.message?.includes("Invalid login credentials") || err?.message?.includes("401")) {
+        setError("E-mail ou senha incorretos. Por favor, tente novamente.");
+      } else {
+        setError(err?.message || "Erro ao fazer login. Verifique sua conexão.");
+      }
     } finally {
       setLoading(false);
     }
@@ -52,6 +58,23 @@ export default function UserAuth() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    // Validações de Frontend amigáveis
+    if (registerFullName.trim().length < 3) {
+      setError("Por favor, insira seu nome completo.");
+      return;
+    }
+
+    if (registerEmail !== registerEmailConfirm) {
+      setError("Os e-mails digitados não coincidem.");
+      return;
+    }
+
+    if (registerPassword.length < 6) {
+      setError("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -63,8 +86,15 @@ export default function UserAuth() {
         admin_code: registerAdminCode,
       });
       navigate("/my-registrations");
+      window.location.reload(); // Garante que o Header atualize o estado de admin
     } catch (err: any) {
-      setError(err?.message || "Erro ao cadastrar");
+      if (err?.message?.includes("already registered")) {
+        setError("Este e-mail já está cadastrado.");
+      } else if (err?.message?.includes("Invalid admin code")) {
+        setError("O código de administrador é inválido.");
+      } else {
+        setError(err?.message || "Erro ao realizar cadastro.");
+      }
     } finally {
       setLoading(false);
     }
@@ -82,7 +112,16 @@ export default function UserAuth() {
           </div>
 
           {error && (
-            <div className="login-error">
+            <div className="login-error" style={{
+              padding: '12px',
+              borderRadius: '8px',
+              background: 'rgba(255, 59, 48, 0.15)',
+              border: '1px solid #ff3b30',
+              color: '#ff3b30',
+              fontSize: '14px',
+              marginBottom: '16px',
+              textAlign: 'center'
+            }}>
               {error}
             </div>
           )}

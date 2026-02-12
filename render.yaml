@@ -1,13 +1,12 @@
 services:
+  # Backend API
   - type: web
     name: sistema-festas-backend
     env: node
     region: oregon
     plan: free
-    # O buildCommand agora garante que estamos na pasta certa e gera a pasta dist
     buildCommand: cd server && npm install && npm run build
-    # O startCommand aponta para o caminho exato do arquivo gerado
-    startCommand: cd server && node dist/index.js
+    startCommand: cd server && npm start
     envVars:
       - key: NODE_VERSION
         value: 22.13.0
@@ -15,6 +14,7 @@ services:
         value: 3001
       - key: JWT_SECRET
         generateValue: true
+        sync: false
       - key: ADMIN_CODE
         sync: false
       - key: SUPABASE_URL

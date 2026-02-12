@@ -5,53 +5,71 @@ import Home from "./pages/Home";
 import EventPublic from "./pages/EventPublic";
 import UserAuth from "./pages/UserAuth";
 import MyRegistrations from "./pages/MyRegistrations";
-import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminEventForm from "./pages/admin/AdminEventForm";
 import AdminEventOptions from "./pages/admin/AdminEventOptions";
 import AdminEventStats from "./pages/admin/AdminEventStats";
 
 export default function App() {
-  const [authed, setAuthed] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<{ authenticated: boolean; is_admin: boolean }>({
+    authenticated: false,
+    is_admin: false
+  });
 
   useEffect(() => {
     async function checkAuth() {
       try {
         const meRes = await apiGet<{ authenticated: boolean }>("/user/me");
         if (meRes.authenticated) {
-          const profileRes = await apiGet<{ user: any }>("/user/profile");
-          setAuthed(profileRes.user?.is_admin === true);
+          const profileRes = await apiGet<{ user: { is_admin: boolean } }>("/user/profile");
+          setUser({
+            authenticated: true,
+            is_admin: !!profileRes.user?.is_admin
+          });
         } else {
-          setAuthed(false);
+          setUser({ authenticated: false, is_admin: false });
         }
       } catch {
-        setAuthed(false);
+        setUser({ authenticated: false, is_admin: false });
+      } finally {
+        setLoading(false);
       }
     }
     checkAuth();
   }, []);
 
-  function requireAuth(element: JSX.Element) {
-    if (authed === null) return <div className="container"><div className="card muted">Carregando…</div></div>;
-    return authed ? element : <Navigate to="/user-auth" replace />;
+  // Protege rotas que exigem login (qualquer usuário)
+  function PrivateRoute({ element }: { element: JSX.Element }) {
+    if (loading) return <div className="container"><div className="card muted">Carregando…</div></div>;
+    return user.authenticated ? element : <Navigate to="/user-auth" replace />;
+  }
+
+  // Protege rotas que exigem ser Admin
+  function AdminRoute({ element }: { element: JSX.Element }) {
+    if (loading) return <div className="container"><div className="card muted">Carregando…</div></div>;
+    if (!user.authenticated) return <Navigate to="/user-auth" replace />;
+    return user.is_admin ? element : <Navigate to="/" replace />;
   }
 
   return (
     <Routes>
+      {/* Rotas Públicas */}
       <Route path="/" element={<Home />} />
       <Route path="/e/:slug" element={<EventPublic />} />
       <Route path="/user-auth" element={<UserAuth />} />
-      <Route path="/my-registrations" element={<MyRegistrations />} />
 
-      {/* Rota de login antigo removida - use /user-auth */}
+      {/* Rotas de Usuário Logado */}
+      <Route path="/my-registrations" element={<PrivateRoute element={<MyRegistrations />} />} />
 
-      <Route path="/admin" element={requireAuth(<AdminDashboard />)} />
-      <Route path="/admin/new" element={requireAuth(<AdminEventForm />)} />
-      <Route path="/admin/edit/:id" element={requireAuth(<AdminEventForm />)} />
+      {/* Rotas Administrativas */}
+      <Route path="/admin" element={<AdminRoute element={<AdminDashboard />} />} />
+      <Route path="/admin/new" element={<AdminRoute element={<AdminEventForm />} />} />
+      <Route path="/admin/edit/:id" element={<AdminRoute element={<AdminEventForm />} />} />
+      <Route path="/admin/events/:id/options" element={<AdminRoute element={<AdminEventOptions />} />} />
+      <Route path="/admin/events/:id/stats" element={<AdminRoute element={<AdminEventStats />} />} />
 
-      <Route path="/admin/events/:id/options" element={requireAuth(<AdminEventOptions />)} />
-      <Route path="/admin/events/:id/stats" element={requireAuth(<AdminEventStats />)} />
-
+      {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

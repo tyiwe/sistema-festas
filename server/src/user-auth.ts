@@ -3,7 +3,7 @@ import { z } from "zod";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { createClient } from "@supabase/supabase-js";
-import { env } from "./env.js";
+import { env } from "./env";
 
 const router = express.Router();
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {

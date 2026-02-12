@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
 import { apiGet, apiPost } from "../api";
 import Header from "../components/Header";
 
@@ -25,6 +25,7 @@ type OptionRow = {
 export default function EventPublic() {
   const { slug } = useParams();
   const loc = useLocation();
+  const navigate = useNavigate();
   const [event, setEvent] = useState<EventRow | null>(null);
   const [options, setOptions] = useState<OptionRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +95,7 @@ export default function EventPublic() {
     // Verificar se ja esta inscrito
     apiGet<{ registrations: any[] }>("/user/my-registrations")
       .then((r) => {
-        const isRegistered = r.registrations.some((reg) => reg.events.slug === slug);
+        const isRegistered = r.registrations.some((reg) => reg.events?.slug === slug);
         setAlreadyRegistered(isRegistered);
       })
       .catch(() => setAlreadyRegistered(false));
@@ -106,6 +107,11 @@ export default function EventPublic() {
     if (!slug) return;
     setError(null);
     setOk(null);
+
+    if (fullName.trim().length < 3) {
+      setError("Por favor, insira seu nome completo (mínimo 3 letras).");
+      return;
+    }
 
     try {
       await apiPost(`/public/events/${slug}/register`, {
@@ -239,13 +245,25 @@ export default function EventPublic() {
           ) : (
             /* Signup Tab */
             <div className="form-card">
-              {/* Verificar se já está inscrito */}
-              {!loadingAuth && userLoggedIn && alreadyRegistered ? (
+              {!loadingAuth && !userLoggedIn ? (
+                /* Bloqueio de Inscrição sem Login */
+                <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
+                  <h3 style={{ marginBottom: '12px' }}>Login Necessário</h3>
+                  <p className="muted" style={{ marginBottom: '24px' }}>
+                    Para garantir a segurança dos eventos, você precisa estar logado para se inscrever.
+                  </p>
+                  <button className="btn primary full-width" onClick={() => navigate("/user-auth")}>
+                    Fazer Login ou Cadastrar-se
+                  </button>
+                </div>
+              ) : alreadyRegistered ? (
+                /* Já inscrito */
                 <div style={{ textAlign: 'center', padding: '40px 20px' }}>
                   <div style={{ fontSize: '48px', marginBottom: '16px' }}>✓</div>
                   <h3 style={{ marginBottom: '12px' }}>Você já está inscrito!</h3>
                   <p className="muted" style={{ marginBottom: '24px' }}>
-                    Você já se inscreveu neste evento. Confira sua inscrição em "Minhas Inscrições".
+                    Sua vaga está garantida. Confira os detalhes em sua área do cliente.
                   </p>
                   <Link className="btn primary" to="/my-registrations">
                     Ver Minhas Inscrições
@@ -265,7 +283,7 @@ export default function EventPublic() {
                     <div className="stack tight" style={{ padding: 0 }}>
                       <div style={{ textAlign: 'center', marginBottom: '8px' }}>
                         <h3>Seus dados</h3>
-                        <p className="muted small" style={{ marginTop: '4px' }}>Precisamos de algumas informações para sua inscrição.</p>
+                        <p className="muted small" style={{ marginTop: '4px' }}>Confirme suas informações para a lista de convidados.</p>
                       </div>
                       <div className="field">
                         <span>Nome Completo</span>
@@ -273,7 +291,7 @@ export default function EventPublic() {
                       </div>
                       <div className="field">
                         <span>E-mail</span>
-                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" />
+                        <input type="email" value={email} disabled style={{ opacity: 0.6 }} />
                       </div>
                       <div className="field">
                         <span>Telefone</span>
@@ -288,58 +306,67 @@ export default function EventPublic() {
                         className="btn primary full-width"
                         style={{ marginTop: '12px' }}
                         onClick={() => setStep(2)}
-                        disabled={!fullName.trim() || !email.trim() || !phone.trim()}
+                        disabled={fullName.trim().length < 3 || !phone.trim()}
                       >
                         Continuar
                       </button>
                     </div>
                   )}
 
-                  {/* Step 2: Preferences */}
+                  {/* Step 2: Options */}
                   {step === 2 && (
                     <div className="stack tight" style={{ padding: 0 }}>
-                      <div style={{ textAlign: 'center' }}>
-                        <h3>Preferências de bebida</h3>
-                        <p className="muted small" style={{ marginTop: '4px', marginBottom: '24px' }}>
-                          Selecione o que você gostaria de consumir. Isso ajuda na organização!
-                        </p>
+                      <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+                        <h3>Bebidas</h3>
+                        <p className="muted small" style={{ marginTop: '4px' }}>Selecione o que você gostaria de beber.</p>
+                      </div>
+                      
+                      <div className="options-grid" style={{ display: 'grid', gap: '12px' }}>
+                        {options.length > 0 ? options.map((o) => (
+                          <label key={o.id} style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '12px', 
+                            padding: '16px', 
+                            background: 'var(--bg-alt)', 
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            border: selected[o.id] ? '1px solid var(--primary)' : '1px solid transparent'
+                          }}>
+                            <input
+                              type="checkbox"
+                              checked={selected[o.id]}
+                              onChange={(e) => setSelected({ ...selected, [o.id]: e.target.checked })}
+                              style={{ width: '20px', height: '20px' }}
+                            />
+                            <span style={{ fontWeight: 500 }}>{o.name}</span>
+                          </label>
+                        )) : (
+                          <p className="muted" style={{ textAlign: 'center', padding: '20px' }}>Este evento não possui opções de bebidas.</p>
+                        )}
                       </div>
 
-                      {options.length === 0 ? (
-                        <div className="muted" style={{ textAlign: 'center', padding: '32px', background: 'var(--bg-alt)', borderRadius: 'var(--radius-sm)' }}>
-                          Nenhuma opção de bebida cadastrada.
-                        </div>
-                      ) : (
-                        <div className="chipGrid" style={{ justifyContent: 'center' }}>
-                          {options.map((o) => (
-                            <button
-                              key={o.id}
-                              className={`chip ${selected[o.id] ? "chipOn" : ""}`}
-                              onClick={() => setSelected((s) => ({ ...s, [o.id]: !s[o.id] }))}
-                            >
-                              {o.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="field" style={{ marginTop: '16px' }}>
-                        <span>Observações (opcional)</span>
-                        <textarea
-                          value={notes}
-                          onChange={(e) => setNotes(e.target.value)}
-                          placeholder="Algo que devemos saber?"
-                          rows={3}
+                      <div className="field" style={{ marginTop: '12px' }}>
+                        <span>Observações Adicionais</span>
+                        <textarea 
+                          value={notes} 
+                          onChange={(e) => setNotes(e.target.value)} 
+                          placeholder="Algo mais que precisamos saber?"
+                          style={{ 
+                            width: '100%', 
+                            padding: '12px', 
+                            borderRadius: 'var(--radius-sm)', 
+                            background: 'var(--bg-alt)', 
+                            border: 'none',
+                            minHeight: '80px',
+                            color: 'var(--text)'
+                          }}
                         />
                       </div>
 
-                      <div className="stack tight" style={{ marginTop: '16px', padding: 0 }}>
-                        <button className="btn primary full-width" onClick={submit}>
-                          Confirmar Inscrição
-                        </button>
-                        <button className="btn ghost full-width" onClick={() => setStep(1)}>
-                          Voltar
-                        </button>
+                      <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+                        <button className="btn ghost" onClick={() => setStep(1)} style={{ flex: 1 }}>Voltar</button>
+                        <button className="btn primary" onClick={submit} style={{ flex: 2 }}>Confirmar Inscrição</button>
                       </div>
                     </div>
                   )}
@@ -347,17 +374,13 @@ export default function EventPublic() {
                   {/* Step 3: Success */}
                   {step === 3 && (
                     <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                      <div className="success-icon">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M5 13L9 17L19 7" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </div>
+                      <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎉</div>
                       <h2 style={{ marginBottom: '12px' }}>Tudo pronto!</h2>
-                      <p className="muted" style={{ marginBottom: '32px', fontSize: '17px', lineHeight: '1.5' }}>
-                        Sua inscrição para <strong>{event.title}</strong> foi confirmada com sucesso.
+                      <p className="muted" style={{ marginBottom: '32px' }}>
+                        Sua inscrição em <strong>{event.title}</strong> foi realizada com sucesso.
                       </p>
-                      <Link className="btn primary large" to="/">
-                        Voltar para o início
+                      <Link className="btn primary full-width" to="/my-registrations">
+                        Ver Meus Convites
                       </Link>
                     </div>
                   )}

@@ -4,8 +4,10 @@ services:
     env: node
     region: oregon
     plan: free
+    # O buildCommand agora garante que estamos na pasta certa e gera a pasta dist
     buildCommand: cd server && npm install && npm run build
-    startCommand: cd server && npm start
+    # O startCommand aponta para o caminho exato do arquivo gerado
+    startCommand: cd server && node dist/index.js
     envVars:
       - key: NODE_VERSION
         value: 22.13.0

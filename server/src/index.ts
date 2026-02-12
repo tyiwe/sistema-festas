@@ -5,8 +5,8 @@ import jwt from "jsonwebtoken";
 import multer from "multer";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
-import { env } from "./env";
-import userAuthRouter, { getUserId, requireUserLogin } from "./user-auth";
+import { env } from "./env.js";
+import userAuthRouter, { getUserId } from "./user-auth.js";
 
 const app = express();
 
@@ -19,28 +19,26 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir requisições sem origin (mobile apps, Postman, etc)
     if (!origin) return callback(null, true);
     
-    // Permitir domínios específicos
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     
-    // Permitir qualquer domínio .netlify.app
     if (origin.endsWith('.netlify.app')) {
       return callback(null, true);
     }
     
     callback(new Error('Not allowed by CORS'));
   },
-  credentials: true,
+  credentials: true, // ESSENCIAL para permitir cookies
 }));
+
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 app.use("/api/user", userAuthRouter);
 
-// Upload de imagens (usa memória; envia para Supabase Storage)
+// Upload de imagens
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 }, // 8MB
@@ -51,10 +49,6 @@ const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
 });
 
 const ADMIN_COOKIE = "sf_admin";
-
-function signAdminToken() {
-  return jwt.sign({ role: "admin" }, env.JWT_SECRET, { expiresIn: "7d" });
-}
 
 function isAdmin(req: express.Request): boolean {
   const token = req.cookies?.[ADMIN_COOKIE];
@@ -75,29 +69,12 @@ function requireAdmin(req: express.Request, res: express.Response, next: express
   next();
 }
 
-const DEFAULT_DRINKS = [
-  "Gin",
-  "Vodka",
-  "Whisky",
-  "Cerveja",
-  "Vinho",
-  "Energético",
-  "Água",
-  "Refrigerante",
-] as const;
-
-// ---------- Auth (Obsoleto - usar login de usuário com is_admin) ----------
-// Rota de login antigo removida. Use /api/user/login com ADMIN_CODE no cadastro.
-
-// app.post("/api/auth/logout", ...) - Removido, use /api/user/logout
-
 app.get("/api/auth/me", (req, res) => {
   res.json({ authenticated: isAdmin(req) });
 });
 
 // ---------- Helpers ----------
 function toISODateTime(value: string): string {
-  // Accept either ISO or datetime-local (YYYY-MM-DDTHH:mm)
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) throw new Error("Data/hora inválida");
   return d.toISOString();
@@ -188,7 +165,6 @@ app.post("/api/public/events/:slug/register", async (req, res) => {
     return;
   }
 
-  // deadline
   if (event.registration_deadline) {
     const deadline = new Date(event.registration_deadline);
     if (!Number.isNaN(deadline.getTime()) && Date.now() > deadline.getTime()) {
@@ -197,7 +173,6 @@ app.post("/api/public/events/:slug/register", async (req, res) => {
     }
   }
 
-  // capacity
   if (event.capacity) {
     const { count, error: cErr } = await supabase
       .from("registrations")
@@ -213,7 +188,6 @@ app.post("/api/public/events/:slug/register", async (req, res) => {
     }
   }
 
-  // Validate selections belong to event and are available
   const selectionIds = parsed.data.selections;
   if (selectionIds.length) {
     const { data: validOptions, error: vErr } = await supabase
@@ -288,8 +262,6 @@ const eventUpsertSchema = z.object({
   create_default_drinks: z.boolean().optional().default(true),
 });
 
-// Upload de imagens para o Supabase Storage.
-// Retorna uma URL pública para salvar no banco (cover_image_url / gallery_image_urls).
 app.post("/api/admin/upload", requireAdmin, upload.single("file"), async (req, res) => {
   const f = (req as any).file as Express.Multer.File | undefined;
   if (!f) {
@@ -307,7 +279,6 @@ app.post("/api/admin/upload", requireAdmin, upload.single("file"), async (req, r
   const ext = (original.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
   const safeExt = ext.length ? ext : "jpg";
 
-  // opcional: organizamos por eventId
   const eventId = String((req.body?.eventId ?? req.body?.event_id ?? "")).trim();
   const prefix = eventId ? `events/${eventId}` : "events";
   const rand = Math.random().toString(16).slice(2);
@@ -341,6 +312,25 @@ app.get("/api/admin/events", requireAdmin, async (_req, res) => {
   res.json({ events: data ?? [] });
 });
 
+app.get("/api/admin/events/:id", requireAdmin, async (req, res) => {
+  const id = String(req.params.id);
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+  if (!data) {
+    res.status(404).json({ error: "event not found" });
+    return;
+  }
+  res.json({ event: data });
+});
+
 app.post("/api/admin/events", requireAdmin, async (req, res) => {
   const parsed = eventUpsertSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -348,31 +338,16 @@ app.post("/api/admin/events", requireAdmin, async (req, res) => {
     return;
   }
 
-  let iso: string;
-  try {
-    iso = toISODateTime(parsed.data.date_time);
-  } catch (e: any) {
-    res.status(400).json({ error: e?.message ?? "invalid date_time" });
-    return;
-  }
-
-  const deadline = parsed.data.registration_deadline ? toISODateTime(parsed.data.registration_deadline) : null;
-
+  const { create_default_drinks, ...eventData } = parsed.data;
+  
   const { data: event, error } = await supabase
     .from("events")
     .insert({
-      title: parsed.data.title,
-      slug: parsed.data.slug,
-      description: parsed.data.description || null,
-      date_time: iso,
-      location: parsed.data.location,
-      cover_image_url: parsed.data.cover_image_url ?? null,
-      gallery_image_urls: parsed.data.gallery_image_urls ?? [],
-      status: parsed.data.status,
-      registration_deadline: deadline,
-      capacity: parsed.data.capacity ?? null,
+      ...eventData,
+      date_time: toISODateTime(eventData.date_time),
+      registration_deadline: eventData.registration_deadline ? toISODateTime(eventData.registration_deadline) : null,
     })
-    .select("*")
+    .select("id")
     .single();
 
   if (error) {
@@ -380,59 +355,42 @@ app.post("/api/admin/events", requireAdmin, async (req, res) => {
     return;
   }
 
-  if (parsed.data.create_default_drinks) {
-    const rows = DEFAULT_DRINKS.map((name) => ({
+  if (create_default_drinks) {
+    const drinkRows = DEFAULT_DRINKS.map((name) => ({
       event_id: event.id,
       type: "drink",
       name,
       is_available: true,
     }));
-
-    const { error: optErr } = await supabase.from("event_options").insert(rows);
-    if (optErr) {
-      // Non-fatal: event exists, but options failed
-      res.json({ event, warning: optErr.message });
-      return;
-    }
+    await supabase.from("event_options").insert(drinkRows);
   }
 
-  res.json({ event });
+  res.json({ ok: true, id: event.id });
 });
 
-app.patch("/api/admin/events/:id", requireAdmin, async (req, res) => {
+app.put("/api/admin/events/:id", requireAdmin, async (req, res) => {
   const id = String(req.params.id);
-
-  const patchSchema = eventUpsertSchema.partial().extend({
-    create_default_drinks: z.boolean().optional(),
-  });
-
-  const parsed = patchSchema.safeParse(req.body);
+  const parsed = eventUpsertSchema.omit({ create_default_drinks: true }).safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "invalid body", details: parsed.error.flatten() });
     return;
   }
 
-  const patch: any = { ...parsed.data };
-  if (patch.date_time) patch.date_time = toISODateTime(patch.date_time);
-  if (patch.registration_deadline) patch.registration_deadline = toISODateTime(patch.registration_deadline);
-
-  // Quando não vier no PATCH, não mexe. Quando vier como null, zod não aceita (mantemos array).
-  if (patch.gallery_image_urls == null) delete patch.gallery_image_urls;
-
-  delete patch.create_default_drinks;
-
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("events")
-    .update(patch)
-    .eq("id", id)
-    .select("*")
-    .single();
+    .update({
+      ...parsed.data,
+      date_time: toISODateTime(parsed.data.date_time),
+      registration_deadline: parsed.data.registration_deadline ? toISODateTime(parsed.data.registration_deadline) : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
 
   if (error) {
     res.status(500).json({ error: error.message });
     return;
   }
-  res.json({ event: data });
+  res.json({ ok: true });
 });
 
 app.delete("/api/admin/events/:id", requireAdmin, async (req, res) => {
@@ -450,17 +408,11 @@ app.delete("/api/admin/events/:id", requireAdmin, async (req, res) => {
 });
 
 // ---------- Admin: Options ----------
-const optionSchema = z.object({
-  type: z.enum(["drink", "food"]).default("drink"),
-  name: z.string().min(1).max(100),
-  is_available: z.boolean().optional().default(true),
-});
-
 app.get("/api/admin/events/:id/options", requireAdmin, async (req, res) => {
   const eventId = String(req.params.id);
   const { data, error } = await supabase
     .from("event_options")
-    .select("id,event_id,type,name,is_available,created_at")
+    .select("*")
     .eq("event_id", eventId)
     .order("created_at", { ascending: true });
 
@@ -473,56 +425,21 @@ app.get("/api/admin/events/:id/options", requireAdmin, async (req, res) => {
 
 app.post("/api/admin/events/:id/options", requireAdmin, async (req, res) => {
   const eventId = String(req.params.id);
-  const parsed = optionSchema.safeParse(req.body);
+  const schema = z.object({
+    type: z.enum(["drink", "food"]),
+    name: z.string().min(1),
+    is_available: z.boolean().optional().default(true),
+  });
+  const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "invalid body", details: parsed.error.flatten() });
+    res.status(400).json({ error: "invalid body" });
     return;
   }
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("event_options")
-    .insert({
-      event_id: eventId,
-      type: parsed.data.type,
-      name: parsed.data.name,
-      is_available: parsed.data.is_available,
-    })
-    .select("*")
-    .single();
+    .insert({ ...parsed.data, event_id: eventId });
 
-  if (error) {
-    res.status(500).json({ error: error.message });
-    return;
-  }
-  res.json({ option: data });
-});
-
-app.patch("/api/admin/options/:id", requireAdmin, async (req, res) => {
-  const id = String(req.params.id);
-  const parsed = optionSchema.partial().safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "invalid body", details: parsed.error.flatten() });
-    return;
-  }
-
-  const { data, error } = await supabase
-    .from("event_options")
-    .update(parsed.data)
-    .eq("id", id)
-    .select("*")
-    .single();
-
-  if (error) {
-    res.status(500).json({ error: error.message });
-    return;
-  }
-  res.json({ option: data });
-});
-
-app.delete("/api/admin/options/:id", requireAdmin, async (req, res) => {
-  const id = String(req.params.id);
-  // delete option; selections keep but will break FK if cascade not set; schema uses REFERENCES with CASCADE? in user's schema, selections references option_id. likely ON DELETE CASCADE missing. To be safe, soft-disable.
-  const { error } = await supabase.from("event_options").update({ is_available: false }).eq("id", id);
   if (error) {
     res.status(500).json({ error: error.message });
     return;
@@ -530,108 +447,99 @@ app.delete("/api/admin/options/:id", requireAdmin, async (req, res) => {
   res.json({ ok: true });
 });
 
-// ---------- Admin: Registrations & Stats ----------
-app.get("/api/admin/events/:id/registrations", requireAdmin, async (req, res) => {
-  const eventId = String(req.params.id);
+app.put("/api/admin/options/:id", requireAdmin, async (req, res) => {
+  const id = String(req.params.id);
+  const schema = z.object({
+    name: z.string().min(1).optional(),
+    is_available: z.boolean().optional(),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "invalid body" });
+    return;
+  }
 
-  const { data: regs, error } = await supabase
-    .from("registrations")
-    .select("id,event_id,full_name,email,phone,allergies,notes,created_at")
-    .eq("event_id", eventId)
-    .order("created_at", { ascending: false });
+  const { error } = await supabase
+    .from("event_options")
+    .update(parsed.data)
+    .eq("id", id);
 
   if (error) {
     res.status(500).json({ error: error.message });
     return;
   }
-
-  const regIds = (regs ?? []).map((r) => r.id);
-  let selections: any[] = [];
-  if (regIds.length) {
-    const { data: sel, error: sErr } = await supabase
-      .from("registration_selections")
-      .select("registration_id,option_id,event_options(name,type)")
-      .in("registration_id", regIds);
-
-    if (sErr) {
-      res.status(500).json({ error: sErr.message });
-      return;
-    }
-    selections = sel ?? [];
-  }
-
-  const byReg: Record<string, any[]> = {};
-  for (const s of selections) {
-    const rid = s.registration_id;
-    if (!byReg[rid]) byReg[rid] = [];
-    byReg[rid].push({ option_id: s.option_id, name: s.event_options?.name, type: s.event_options?.type });
-  }
-
-  const rows = (regs ?? []).map((r) => ({
-    ...r,
-    selections: byReg[r.id] ?? [],
-  }));
-
-  res.json({ registrations: rows });
+  res.json({ ok: true });
 });
 
+app.delete("/api/admin/options/:id", requireAdmin, async (req, res) => {
+  const id = String(req.params.id);
+  const { error } = await supabase.from("event_options").delete().eq("id", id);
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+  res.json({ ok: true });
+});
+
+// ---------- Admin: Stats/Registrations ----------
 app.get("/api/admin/events/:id/stats", requireAdmin, async (req, res) => {
   const eventId = String(req.params.id);
 
-  const { data: options, error: oErr } = await supabase
-    .from("event_options")
-    .select("id,name,type,is_available")
-    .eq("event_id", eventId)
-    .eq("type", "drink")
-    .order("created_at", { ascending: true });
-
-  if (oErr) {
-    res.status(500).json({ error: oErr.message });
-    return;
-  }
-
-  const { data: regs, error: rErr } = await supabase
+  const { data: registrations, error: rErr } = await supabase
     .from("registrations")
-    .select("id", { count: "exact" })
-    .eq("event_id", eventId);
+    .select(`
+      id,
+      full_name,
+      email,
+      phone,
+      allergies,
+      notes,
+      created_at,
+      registration_selections(option_id, event_options(name))
+    `)
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: false });
 
   if (rErr) {
     res.status(500).json({ error: rErr.message });
     return;
   }
 
-  const regIds = (regs ?? []).map((r) => r.id);
-  let counts: Record<string, number> = {};
-  if (regIds.length) {
-    const { data: sels, error: sErr } = await supabase
-      .from("registration_selections")
-      .select("option_id")
-      .in("registration_id", regIds);
+  const { data: options, error: oErr } = await supabase
+    .from("event_options")
+    .select("id, name")
+    .eq("event_id", eventId);
 
-    if (sErr) {
-      res.status(500).json({ error: sErr.message });
-      return;
-    }
-
-    for (const s of sels ?? []) counts[s.option_id] = (counts[s.option_id] ?? 0) + 1;
+  if (oErr) {
+    res.status(500).json({ error: oErr.message });
+    return;
   }
 
-  const drinkCounts = (options ?? []).map((o) => ({
-    option_id: o.id,
-    name: o.name,
-    is_available: o.is_available,
-    count: counts[o.id] ?? 0,
-  })).sort((a,b)=>b.count-a.count);
+  const counts: Record<string, number> = {};
+  for (const opt of options ?? []) {
+    counts[opt.name] = 0;
+  }
+
+  for (const reg of registrations ?? []) {
+    for (const sel of (reg as any).registration_selections ?? []) {
+      const name = sel.event_options?.name;
+      if (name) counts[name] = (counts[name] || 0) + 1;
+    }
+  }
 
   res.json({
-    total_registrations: regs?.length ?? 0,
-    drink_counts: drinkCounts,
+    total: registrations?.length ?? 0,
+    registrations: registrations ?? [],
+    optionCounts: counts,
   });
 });
 
-// ---------- Root ----------
-app.get("/api/health", (_req, res) => res.json({ ok: true }));
+// ---------- Health ----------
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
 
-app.listen(env.PORT, () => {
-  console.log(`[server] running on http://localhost:${env.PORT}`);
+const port = env.PORT || 3001;
+app.listen(port, "0.0.0.0", () => {
+  console.log(`[server] running on http://0.0.0.0:${port}`);
 });

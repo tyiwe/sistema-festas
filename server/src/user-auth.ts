@@ -3,7 +3,7 @@ import { z } from "zod";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { createClient } from "@supabase/supabase-js";
-import { env } from "./env";
+import { env } from "./env.js";
 
 const router = express.Router();
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
@@ -46,7 +46,7 @@ export function requireUserLogin(req: express.Request, res: express.Response, ne
   next();
 }
 
-// Código secreto para admin (defina aqui)
+// Código secreto para admin
 const ADMIN_CODE = process.env.ADMIN_CODE || "ADMIN2026";
 
 // Cadastro de usuário
@@ -68,13 +68,11 @@ router.post("/register", async (req, res) => {
   const { email, email_confirm, password, full_name, admin_code } = parsed.data;
   const isAdmin = admin_code === ADMIN_CODE;
 
-  // Validar se os e-mails coincidem
   if (email !== email_confirm) {
     res.status(400).json({ error: "E-mails não coincidem" });
     return;
   }
 
-  // Verificar se usuário já existe
   const { data: existingUser } = await supabase
     .from("users")
     .select("id")
@@ -86,10 +84,8 @@ router.post("/register", async (req, res) => {
     return;
   }
 
-  // Hash da senha
   const passwordHash = await bcryptjs.hash(password, 10);
 
-  // Criar usuário
   const { data: newUser, error } = await supabase
     .from("users")
     .insert({
@@ -107,12 +103,13 @@ router.post("/register", async (req, res) => {
     return;
   }
 
-  // Gerar token e cookie
   const token = signUserToken(newUser.id);
+  
+  // CONFIGURAÇÃO DE COOKIE PARA PRODUÇÃO (CROSS-DOMAIN)
   res.cookie(USER_COOKIE, token, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: false,
+    sameSite: "none", // Necessário para Netlify -> Render
+    secure: true,     // Necessário para SameSite: none
     path: "/",
     maxAge: 30 * 24 * 60 * 60 * 1000,
   });
@@ -135,7 +132,6 @@ router.post("/login", async (req, res) => {
 
   const { email, password } = parsed.data;
 
-  // Buscar usuário
   const { data: user, error } = await supabase
     .from("users")
     .select("id, email, password_hash, full_name, is_admin")
@@ -147,19 +143,19 @@ router.post("/login", async (req, res) => {
     return;
   }
 
-  // Verificar senha
   const passwordMatch = await bcryptjs.compare(password, user.password_hash);
   if (!passwordMatch) {
     res.status(401).json({ error: "E-mail ou senha inválidos" });
     return;
   }
 
-  // Gerar token e cookie
   const token = signUserToken(user.id);
+  
+  // CONFIGURAÇÃO DE COOKIE PARA PRODUÇÃO (CROSS-DOMAIN)
   res.cookie(USER_COOKIE, token, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: false,
+    sameSite: "none", // Necessário para Netlify -> Render
+    secure: true,     // Necessário para SameSite: none
     path: "/",
     maxAge: 30 * 24 * 60 * 60 * 1000,
   });
@@ -169,7 +165,11 @@ router.post("/login", async (req, res) => {
 
 // Logout de usuário
 router.post("/logout", (req, res) => {
-  res.clearCookie(USER_COOKIE, { path: "/" });
+  res.clearCookie(USER_COOKIE, { 
+    path: "/",
+    sameSite: "none",
+    secure: true
+  });
   res.json({ ok: true });
 });
 
@@ -249,7 +249,6 @@ router.delete("/registrations/:id", requireUserLogin, async (req, res) => {
     return;
   }
 
-  // Verificar se a inscrição pertence ao usuário
   const { data: registration, error: checkError } = await supabase
     .from("registrations")
     .select("id, user_id")
@@ -266,7 +265,6 @@ router.delete("/registrations/:id", requireUserLogin, async (req, res) => {
     return;
   }
 
-  // Deletar inscrição (as seleções serão deletadas em cascata)
   const { error: deleteError } = await supabase
     .from("registrations")
     .delete()

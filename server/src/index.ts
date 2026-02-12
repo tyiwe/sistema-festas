@@ -1,4 +1,5 @@
 import express from "express";
+import type { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
@@ -6,7 +7,7 @@ import multer from "multer";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { env } from "./env.js";
-import userAuthRouter, { getUserId } from "./user-auth.js";
+import userAuthRouter, { getUserId, requireUserLogin } from "./user-auth.js";
 
 const app = express();
 
@@ -14,25 +15,42 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
-  process.env.CLIENT_URL, // URL do frontend no Netlify
-].filter(Boolean);
+  process.env.CLIENT_URL,
+].filter(Boolean).map(o => o!.replace(/\/$/, ""));
 
 app.use(cors({
-  origin: (origin, callback) => {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Se não houver origin (ex: mobile apps, curl, ou same-origin), permite
     if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
+
+    const cleanOrigin = origin.replace(/\/$/, "");
+    const allowedPatterns = [
+      /^http:\/\/localhost:\d+$/,
+      /^http:\/\/127\.0\.0\.1:\d+$/,
+      /\.netlify\.app$/,
+      /\.onrender\.com$/
+    ];
+
+    const isAllowed = allowedPatterns.some(pattern => pattern.test(cleanOrigin)) ||
+                     (process.env.CLIENT_URL && cleanOrigin.startsWith(process.env.CLIENT_URL.replace(/\/$/, "")));
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS] Bloqueado: ${origin}`);
+      callback(null, false);
     }
-    
-    if (origin.endsWith('.netlify.app')) {
-      return callback(null, true);
-    }
-    
-    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Cookie", "X-Requested-With"],
 }));
+
+// Middleware para log de requisições (ajuda no debug)
+app.use((req, _res, next) => {
+  console.log(`${new Date().toISOString()} [${req.method}] ${req.url} - Origin: ${req.headers.origin || 'N/A'}`);
+  next();
+});
 
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
@@ -52,6 +70,7 @@ const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
 async function isAdmin(req: express.Request): Promise<boolean> {
   const userId = getUserId(req);
   if (!userId) return false;
+  if (userId === "admin") return true;
 
   try {
     const { data: user, error } = await supabase
@@ -88,9 +107,37 @@ const DEFAULT_DRINKS = [
   "Refrigerante",
 ] as const;
 
-app.get("/api/auth/me", async (req, res) => {
+app.get("/api/auth/me", async (req: Request, res: Response) => {
   const isAdm = await isAdmin(req);
   res.json({ authenticated: isAdm });
+});
+
+app.post("/api/auth/login", async (req: Request, res: Response) => {
+  const { password } = req.body;
+  if (password === env.ADMIN_CODE) {
+    // Para simplificar, vamos criar um token de admin "especial" 
+    // ou apenas usar o sistema de cookies existente se preferir.
+    // Como AdminLogin.tsx espera apenas sucesso, vamos assinar um token.
+    
+    const token = jwt.sign({ userId: "admin", role: "admin" }, env.JWT_SECRET, { expiresIn: "7d" });
+    
+    res.cookie("sf_user", token, {
+      httpOnly: true,
+      sameSite: "none",
+      secure: true,
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    
+    res.json({ ok: true });
+  } else {
+    res.status(401).json({ error: "invalid password" });
+  }
+});
+
+app.post("/api/auth/logout", (_req: Request, res: Response) => {
+  res.clearCookie("sf_user", { path: "/", sameSite: "none", secure: true });
+  res.json({ ok: true });
 });
 
 // ---------- Helpers ----------
@@ -101,7 +148,7 @@ function toISODateTime(value: string): string {
 }
 
 // ---------- Public ----------
-app.get("/api/public/events", async (_req, res) => {
+app.get("/api/public/events", async (_req: Request, res: Response) => {
   const { data, error } = await supabase
     .from("events")
     .select("id,title,slug,description,date_time,location,cover_image_url,gallery_image_urls,status,registration_deadline,capacity")
@@ -116,7 +163,7 @@ app.get("/api/public/events", async (_req, res) => {
   res.json({ events: data ?? [] });
 });
 
-app.get("/api/public/events/:slug", async (req, res) => {
+app.get("/api/public/events/:slug", async (req: Request, res: Response) => {
   const slug = String(req.params.slug);
 
   const { data: event, error } = await supabase
@@ -151,7 +198,7 @@ app.get("/api/public/events/:slug", async (req, res) => {
   res.json({ event, options: options ?? [] });
 });
 
-app.post("/api/public/events/:slug/register", async (req, res) => {
+app.post("/api/public/events/:slug/register", requireUserLogin, async (req: Request, res: Response) => {
   const slug = String(req.params.slug);
 
   const bodySchema = z.object({
@@ -282,7 +329,7 @@ const eventUpsertSchema = z.object({
   create_default_drinks: z.boolean().optional().default(true),
 });
 
-app.post("/api/admin/upload", requireAdmin, upload.single("file"), async (req, res) => {
+app.post("/api/admin/upload", requireAdmin, upload.single("file"), async (req: Request, res: Response) => {
   const f = (req as any).file as Express.Multer.File | undefined;
   if (!f) {
     res.status(400).json({ error: "file is required" });
@@ -318,7 +365,7 @@ app.post("/api/admin/upload", requireAdmin, upload.single("file"), async (req, r
   res.json({ url: data.publicUrl, path });
 });
 
-app.get("/api/admin/events", requireAdmin, async (_req, res) => {
+app.get("/api/admin/events", requireAdmin, async (_req: Request, res: Response) => {
   const { data, error } = await supabase
     .from("events")
     .select("id,title,slug,description,date_time,location,cover_image_url,gallery_image_urls,status,registration_deadline,capacity,created_at")
@@ -332,7 +379,7 @@ app.get("/api/admin/events", requireAdmin, async (_req, res) => {
   res.json({ events: data ?? [] });
 });
 
-app.get("/api/admin/events/:id", requireAdmin, async (req, res) => {
+app.get("/api/admin/events/:id", requireAdmin, async (req: Request, res: Response) => {
   const id = String(req.params.id);
   const { data, error } = await supabase
     .from("events")
@@ -351,7 +398,7 @@ app.get("/api/admin/events/:id", requireAdmin, async (req, res) => {
   res.json({ event: data });
 });
 
-app.post("/api/admin/events", requireAdmin, async (req, res) => {
+app.post("/api/admin/events", requireAdmin, async (req: Request, res: Response) => {
   const parsed = eventUpsertSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "invalid body", details: parsed.error.flatten() });
@@ -388,7 +435,7 @@ app.post("/api/admin/events", requireAdmin, async (req, res) => {
   res.json({ ok: true, id: event.id });
 });
 
-app.put("/api/admin/events/:id", requireAdmin, async (req, res) => {
+app.put("/api/admin/events/:id", requireAdmin, async (req: Request, res: Response) => {
   const id = String(req.params.id);
   const parsed = eventUpsertSchema.omit({ create_default_drinks: true }).safeParse(req.body);
   if (!parsed.success) {
@@ -413,7 +460,7 @@ app.put("/api/admin/events/:id", requireAdmin, async (req, res) => {
   res.json({ ok: true });
 });
 
-app.delete("/api/admin/events/:id", requireAdmin, async (req, res) => {
+app.delete("/api/admin/events/:id", requireAdmin, async (req: Request, res: Response) => {
   const id = String(req.params.id);
   const { error } = await supabase
     .from("events")
@@ -428,7 +475,7 @@ app.delete("/api/admin/events/:id", requireAdmin, async (req, res) => {
 });
 
 // ---------- Admin: Options ----------
-app.get("/api/admin/events/:id/options", requireAdmin, async (req, res) => {
+app.get("/api/admin/events/:id/options", requireAdmin, async (req: Request, res: Response) => {
   const eventId = String(req.params.id);
   const { data, error } = await supabase
     .from("event_options")
@@ -443,7 +490,7 @@ app.get("/api/admin/events/:id/options", requireAdmin, async (req, res) => {
   res.json({ options: data ?? [] });
 });
 
-app.post("/api/admin/events/:id/options", requireAdmin, async (req, res) => {
+app.post("/api/admin/events/:id/options", requireAdmin, async (req: Request, res: Response) => {
   const eventId = String(req.params.id);
   const schema = z.object({
     type: z.enum(["drink", "food"]),
@@ -467,7 +514,7 @@ app.post("/api/admin/events/:id/options", requireAdmin, async (req, res) => {
   res.json({ ok: true });
 });
 
-app.put("/api/admin/options/:id", requireAdmin, async (req, res) => {
+app.put("/api/admin/options/:id", requireAdmin, async (req: Request, res: Response) => {
   const id = String(req.params.id);
   const schema = z.object({
     name: z.string().min(1).optional(),
@@ -491,7 +538,7 @@ app.put("/api/admin/options/:id", requireAdmin, async (req, res) => {
   res.json({ ok: true });
 });
 
-app.delete("/api/admin/options/:id", requireAdmin, async (req, res) => {
+app.delete("/api/admin/options/:id", requireAdmin, async (req: Request, res: Response) => {
   const id = String(req.params.id);
   const { error } = await supabase.from("event_options").delete().eq("id", id);
   if (error) {
@@ -501,7 +548,7 @@ app.delete("/api/admin/options/:id", requireAdmin, async (req, res) => {
   res.json({ ok: true });
 });
 
-app.get("/api/admin/events/:id/registrations", requireAdmin, async (req, res) => {
+app.get("/api/admin/events/:id/registrations", requireAdmin, async (req: Request, res: Response) => {
   const eventId = String(req.params.id);
 
   const { data, error } = await supabase
@@ -552,7 +599,7 @@ app.get("/api/admin/events/:id/registrations", requireAdmin, async (req, res) =>
 });
 
 // ---------- Admin: Stats/Registrations ----------
-app.get("/api/admin/events/:id/stats", requireAdmin, async (req, res) => {
+app.get("/api/admin/events/:id/stats", requireAdmin, async (req: Request, res: Response) => {
   const eventId = String(req.params.id);
 
   const { data: registrations, error: rErr } = await supabase

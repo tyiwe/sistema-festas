@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import type { Request, Response, NextFunction } from "express";
-import { env } from "./env";
+import { env } from "./env.js";
 
 const COOKIE_NAME = "sf_session";
 const encoder = new TextEncoder();

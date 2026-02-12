@@ -1,0 +1,29 @@
+[build]
+  # Diretório base é o client
+  base = "client"
+  
+  # Comando de build
+  command = "npm run build"
+  
+  # Diretório de publicação (onde o Vite gera os arquivos)
+  publish = "dist"
+
+# Variáveis de ambiente para o build
+[build.environment]
+  NODE_VERSION = "22.13.0"
+
+# Redirecionamento para SPA (Single Page Application)
+# Todas as rotas devem retornar o index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers de segurança e CORS
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    Permissions-Policy = "interest-cohort=()"

@@ -127,6 +127,8 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
       secure: true,
       path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
+      // @ts-ignore
+      partitioned: true,
     });
     
     res.json({ ok: true });
@@ -136,7 +138,13 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
 });
 
 app.post("/api/auth/logout", (_req: Request, res: Response) => {
-  res.clearCookie("sf_user", { path: "/", sameSite: "none", secure: true });
+  res.clearCookie("sf_user", { 
+    path: "/", 
+    sameSite: "none", 
+    secure: true,
+    // @ts-ignore
+    partitioned: true
+  });
   res.json({ ok: true });
 });
 

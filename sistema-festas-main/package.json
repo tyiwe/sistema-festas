@@ -1,0 +1,16 @@
+{
+  "name": "sistema-festas-simples",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c auto \"pnpm -C server dev\" \"pnpm -C client dev\"",
+    "build": "pnpm -C client build && pnpm -C server build",
+    "start": "pnpm -C server start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}

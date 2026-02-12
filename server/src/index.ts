@@ -501,6 +501,56 @@ app.delete("/api/admin/options/:id", requireAdmin, async (req, res) => {
   res.json({ ok: true });
 });
 
+app.get("/api/admin/events/:id/registrations", requireAdmin, async (req, res) => {
+  const eventId = String(req.params.id);
+
+  const { data, error } = await supabase
+    .from("registrations")
+    .select(`
+      id,
+      full_name,
+      email,
+      phone,
+      allergies,
+      notes,
+      created_at,
+      registration_selections(
+        option_id,
+        event_options(name, type)
+      )
+    `)
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+
+  const registrations = (data ?? []).map((r: any) => {
+    const selections = (r.registration_selections ?? [])
+      .map((s: any) => ({
+        option_id: s.option_id,
+        name: s.event_options?.name ?? "",
+        type: s.event_options?.type ?? "",
+      }))
+      .filter((x: any) => x.option_id && x.name);
+
+    return {
+      id: r.id,
+      full_name: r.full_name,
+      email: r.email,
+      phone: r.phone,
+      allergies: r.allergies ?? null,
+      notes: r.notes ?? null,
+      created_at: r.created_at,
+      selections,
+    };
+  });
+
+  res.json({ registrations });
+});
+
 // ---------- Admin: Stats/Registrations ----------
 app.get("/api/admin/events/:id/stats", requireAdmin, async (req, res) => {
   const eventId = String(req.params.id);

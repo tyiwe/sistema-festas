@@ -6,7 +6,7 @@ import multer from "multer";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { env } from "./env.js";
-import userAuthRouter, { getUserId, requireUserLogin } from "./user-auth";
+import userAuthRouter, { getUserId, requireUserLogin } from "./user-auth.js";
 
 const app = express();
 

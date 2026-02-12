@@ -451,7 +451,8 @@ app.put("/api/admin/events/:id", requireAdmin, async (req: Request, res: Respons
       registration_deadline: parsed.data.registration_deadline ? toISODateTime(parsed.data.registration_deadline) : null,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", id);
+    .eq("id", id)
+    .select();
 
   if (error) {
     res.status(500).json({ error: error.message });

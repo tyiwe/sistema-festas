@@ -624,7 +624,7 @@ app.get("/api/admin/events/:id/stats", requireAdmin, async (req: Request, res: R
 
   const { data: options, error: oErr } = await supabase
     .from("event_options")
-    .select("id, name")
+    .select("id, name, is_available")
     .eq("event_id", eventId);
 
   if (oErr) {
@@ -632,22 +632,24 @@ app.get("/api/admin/events/:id/stats", requireAdmin, async (req: Request, res: R
     return;
   }
 
-  const counts: Record<string, number> = {};
-  for (const opt of options ?? []) {
-    counts[opt.name] = 0;
-  }
+  const drinkCounts = (options ?? []).map(opt => ({
+    option_id: opt.id,
+    name: opt.name,
+    is_available: opt.is_available,
+    count: 0
+  }));
 
   for (const reg of registrations ?? []) {
     for (const sel of (reg as any).registration_selections ?? []) {
-      const name = sel.event_options?.name;
-      if (name) counts[name] = (counts[name] || 0) + 1;
+      const optionId = sel.option_id;
+      const dc = drinkCounts.find(d => d.option_id === optionId);
+      if (dc) dc.count++;
     }
   }
 
   res.json({
-    total: registrations?.length ?? 0,
-    registrations: registrations ?? [],
-    optionCounts: counts,
+    total_registrations: registrations?.length ?? 0,
+    drink_counts: drinkCounts
   });
 });
 

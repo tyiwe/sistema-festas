@@ -39,17 +39,27 @@ export default function AdminEventStats() {
 
   const [stats, setStats] = useState<Stats | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"stats" | "registrations">("stats");
 
   useEffect(() => {
-    apiGet<Stats>(`/admin/events/${eventId}/stats`)
-      .then(setStats)
-      .catch((e: any) => setError(String(e?.message ?? e)));
-
-    apiGet<RegistrationsResponse>(`/admin/events/${eventId}/registrations`)
-      .then((data) => setRegistrations(data.registrations))
-      .catch((e: any) => setError(String(e?.message ?? e)));
+    async function loadData() {
+      setLoading(true);
+      try {
+        const [statsData, regsData] = await Promise.all([
+          apiGet<Stats>(`/admin/events/${eventId}/stats`),
+          apiGet<RegistrationsResponse>(`/admin/events/${eventId}/registrations`)
+        ]);
+        setStats(statsData);
+        setRegistrations(regsData.registrations);
+      } catch (e: any) {
+        setError(String(e?.message ?? e));
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
   }, [eventId]);
 
   const max = useMemo(() => {
@@ -105,7 +115,7 @@ export default function AdminEventStats() {
             </button>
           </div>
 
-          {!stats || registrations.length === 0 && activeTab === "registrations" ? (
+          {loading ? (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
               <div style={{
                 width: '32px',
@@ -132,7 +142,7 @@ export default function AdminEventStats() {
                     </div>
                     <div className="stat-card">
                       <div className="stat-label">Opções Ativas</div>
-                      <div className="stat-value">{stats.drink_counts.filter(d => d.is_available).length}</div>
+                      <div className="stat-value">{stats?.drink_counts?.filter(d => d.is_available).length ?? 0}</div>
                     </div>
                   </div>
 

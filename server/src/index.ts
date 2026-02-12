@@ -355,11 +355,11 @@ app.post("/api/admin/events", requireAdmin, async (req, res) => {
     return;
   }
 
-  if (create_default_drinks) {
+  if (create_default_drinks && event?.id) {
     const drinkRows = DEFAULT_DRINKS.map((name) => ({
       event_id: event.id,
       type: "drink",
-      name,
+      name: String(name),
       is_available: true,
     }));
     await supabase.from("event_options").insert(drinkRows);

@@ -238,6 +238,69 @@ export default function AdminEventForm() {
                 )}
               </div>
 
+              <div className="field" style={{ marginTop: '16px' }}>
+                <span>Galeria de Fotos (até 3)</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginTop: '8px' }}>
+                  {[0, 1, 2].map((idx) => (
+                    <div key={idx} style={{ textAlign: 'center' }}>
+                      <div style={{
+                        width: '100%',
+                        aspectRatio: '1',
+                        background: 'var(--bg-secondary)',
+                        borderRadius: 'var(--radius-sm)',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '1px dashed var(--border)',
+                        position: 'relative'
+                      }}>
+                        {galleryUrls[idx] ? (
+                          <>
+                            <img src={galleryUrls[idx]} alt={`Galeria ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <button
+                              className="btn secondary small"
+                              style={{ position: 'absolute', top: '4px', right: '4px', padding: '2px 6px', fontSize: '10px' }}
+                              onClick={() => {
+                                const newUrls = [...galleryUrls];
+                                newUrls[idx] = "";
+                                setGalleryUrls(newUrls);
+                              }}
+                            >
+                              X
+                            </button>
+                          </>
+                        ) : (
+                          <label style={{ cursor: 'pointer', padding: '10px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                            <span>+ Foto</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              style={{ display: 'none' }}
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                try {
+                                  setLoading(true);
+                                  const url = await uploadImage(file);
+                                  const newUrls = [...galleryUrls];
+                                  newUrls[idx] = url;
+                                  setGalleryUrls(newUrls);
+                                } catch (err: any) {
+                                  setError(String(err?.message ?? err));
+                                } finally {
+                                  setLoading(false);
+                                }
+                              }}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {!editing && (
                 <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
                   <input

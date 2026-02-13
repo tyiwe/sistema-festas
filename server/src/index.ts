@@ -676,32 +676,39 @@ app.listen(port, "0.0.0.0", () => {
   console.log(`[server] running on http://0.0.0.0:${port}`);
 
   // Keep-Alive: Ciclo de pings sequenciais (8, 10, 12 min) com segundos aleatórios
-  const URL_BACKEND = process.env.RENDER_EXTERNAL_URL || process.env.CLIENT_URL || `http://localhost:${port}`;
-  if (URL_BACKEND) {
-    const intervals = [8, 10, 12]; // Minutos
-    let currentStep = 0;
+  // Usamos localhost para o ping interno ser mais confiável e não depender de DNS externo
+  const portForPing = env.PORT || 3001;
+  const INTERNAL_URL = `http://localhost:${portForPing}`;
+  
+  const intervals = [8, 10, 12]; // Minutos
+  let currentStep = 0;
 
-    const keepAlive = () => {
-      const baseMinutes = intervals[currentStep];
-      const randomSeconds = Math.floor(Math.random() * 60); // Segundos aleatórios
-      const ms = (baseMinutes * 60 + randomSeconds) * 1000;
-      
-      console.log(`[Keep-Alive] Agendado para daqui a ${baseMinutes}min ${randomSeconds}s (Passo ${currentStep + 1}/3)`);
+  const keepAlive = () => {
+    const baseMinutes = intervals[currentStep];
+    const randomSeconds = Math.floor(Math.random() * 60); // Segundos aleatórios
+    const ms = (baseMinutes * 60 + randomSeconds) * 1000;
+    
+    console.log(`[Keep-Alive] Agendado para daqui a ${baseMinutes}min ${randomSeconds}s (Passo ${currentStep + 1}/3)`);
 
-      setTimeout(async () => {
-        try {
-          const endpoint = "/api/health";
-          await fetch(`${URL_BACKEND.replace(/\/$/, "")}${endpoint}`);
-          console.log(`[Keep-Alive] Ping executado no minuto ${baseMinutes}:${randomSeconds.toString().padStart(2, '0')}`);
-        } catch (err) {
-          console.warn(`[Keep-Alive] Falha no ping`);
+    setTimeout(async () => {
+      try {
+        const endpoint = "/api/health";
+        // Tenta ping interno (localhost) que é infalível se o servidor estiver de pé
+        const res = await fetch(`${INTERNAL_URL}${endpoint}`);
+        if (res.ok) {
+          console.log(`[Keep-Alive] Ping interno OK (${baseMinutes}:${randomSeconds.toString().padStart(2, '0')})`);
+        } else {
+          console.warn(`[Keep-Alive] Ping interno retornou status ${res.status}`);
         }
-        
-        // Avança para o próximo intervalo ou reseta para o primeiro
-        currentStep = (currentStep + 1) % intervals.length;
-        keepAlive();
-      }, ms);
-    };
-    keepAlive();
-  }
+      } catch (err) {
+        console.warn(`[Keep-Alive] Falha crítica no auto-ping interno:`, err);
+      }
+      
+      currentStep = (currentStep + 1) % intervals.length;
+      keepAlive();
+    }, ms);
+  };
+  
+  // Inicia o ciclo de keep-alive
+  keepAlive();
 });

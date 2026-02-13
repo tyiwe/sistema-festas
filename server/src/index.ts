@@ -675,22 +675,30 @@ const port = env.PORT || 3001;
 app.listen(port, "0.0.0.0", () => {
   console.log(`[server] running on http://0.0.0.0:${port}`);
 
-  // Keep-Alive: Ping aleatório para evitar hibernação do Render
+  // Keep-Alive: Ciclo de pings sequenciais (8, 10, 12 min) com segundos aleatórios
   const URL_BACKEND = process.env.RENDER_EXTERNAL_URL || process.env.CLIENT_URL || `http://localhost:${port}`;
   if (URL_BACKEND) {
+    const intervals = [8, 10, 12]; // Minutos
+    let currentStep = 0;
+
     const keepAlive = () => {
-      // Intervalo aleatório entre 8 e 13 minutos (Render hiberna em 15)
-      const minutes = Math.floor(Math.random() * (13 - 8 + 1) + 8);
-      const ms = minutes * 60 * 1000;
+      const baseMinutes = intervals[currentStep];
+      const randomSeconds = Math.floor(Math.random() * 60); // Segundos aleatórios
+      const ms = (baseMinutes * 60 + randomSeconds) * 1000;
       
+      console.log(`[Keep-Alive] Agendado para daqui a ${baseMinutes}min ${randomSeconds}s (Passo ${currentStep + 1}/3)`);
+
       setTimeout(async () => {
         try {
           const endpoint = "/api/health";
-          console.log(`[Keep-Alive] Ping em ${endpoint} (próximo em ${minutes}min)`);
           await fetch(`${URL_BACKEND.replace(/\/$/, "")}${endpoint}`);
+          console.log(`[Keep-Alive] Ping executado no minuto ${baseMinutes}:${randomSeconds.toString().padStart(2, '0')}`);
         } catch (err) {
-          // Silencioso em caso de erro para não poluir o log
+          console.warn(`[Keep-Alive] Falha no ping`);
         }
+        
+        // Avança para o próximo intervalo ou reseta para o primeiro
+        currentStep = (currentStep + 1) % intervals.length;
         keepAlive();
       }, ms);
     };

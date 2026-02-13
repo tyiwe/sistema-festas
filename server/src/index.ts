@@ -674,4 +674,26 @@ app.get("/api/health", (_req, res) => {
 const port = env.PORT || 3001;
 app.listen(port, "0.0.0.0", () => {
   console.log(`[server] running on http://0.0.0.0:${port}`);
+
+  // Keep-Alive: Ping aleatório para evitar hibernação do Render
+  const URL_BACKEND = process.env.RENDER_EXTERNAL_URL || process.env.CLIENT_URL || `http://localhost:${port}`;
+  if (URL_BACKEND) {
+    const keepAlive = () => {
+      // Intervalo aleatório entre 8 e 13 minutos (Render hiberna em 15)
+      const minutes = Math.floor(Math.random() * (13 - 8 + 1) + 8);
+      const ms = minutes * 60 * 1000;
+      
+      setTimeout(async () => {
+        try {
+          const endpoint = "/api/health";
+          console.log(`[Keep-Alive] Ping em ${endpoint} (próximo em ${minutes}min)`);
+          await fetch(`${URL_BACKEND.replace(/\/$/, "")}${endpoint}`);
+        } catch (err) {
+          // Silencioso em caso de erro para não poluir o log
+        }
+        keepAlive();
+      }, ms);
+    };
+    keepAlive();
+  }
 });

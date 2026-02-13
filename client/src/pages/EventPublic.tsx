@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
-import { apiGet, apiPost } from "../api";
+import { apiGet, apiPost, apiPut } from "../api";
 import Header from "../components/Header";
 
 type EventRow = {

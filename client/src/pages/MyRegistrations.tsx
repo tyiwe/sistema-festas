@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { apiGet, apiPost } from "../api";
+import { apiDelete, apiGet, apiPost } from "../api";
 import Header from "../components/Header";
 
 type Registration = {
@@ -69,7 +69,7 @@ export default function MyRegistrations() {
 
     setCancelingId(registrationId);
     try {
-      await apiPost(`/user/registrations/${registrationId}`, {}, "DELETE");
+      await apiDelete(`/user/registrations/${registrationId}`);
       setRegistrations((prev) => prev.filter((r) => r.id !== registrationId));
     } catch (err: any) {
       setError(err?.message || "Erro ao cancelar inscrição");

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { apiGet, apiPost } from "../../api";
+import { apiDelete, apiGet, apiPatch, apiPost } from "../../api";
 
 type OptionRow = {
   id: string;
@@ -53,7 +53,7 @@ export default function AdminEventOptions() {
 
   async function toggle(option: OptionRow) {
     try {
-      await apiPost(`/admin/options/${option.id}`, { is_available: !option.is_available }, "PATCH");
+      await apiPatch(`/admin/options/${option.id}`, { is_available: !option.is_available });
       await load();
     } catch (e) {
       setError("Erro ao atualizar status.");
@@ -62,7 +62,7 @@ export default function AdminEventOptions() {
 
   async function rename(option: OptionRow, newName: string) {
     try {
-      await apiPost(`/admin/options/${option.id}`, { name: newName }, "PATCH");
+      await apiPatch(`/admin/options/${option.id}`, { name: newName });
       await load();
     } catch (e) {
       setError("Erro ao renomear.");
@@ -72,7 +72,7 @@ export default function AdminEventOptions() {
   async function remove(option: OptionRow) {
     if (!confirm(`Deseja remover "${option.name}"?`)) return;
     try {
-      await apiPost(`/admin/options/${option.id}`, {}, "DELETE");
+      await apiDelete(`/admin/options/${option.id}`);
       await load();
     } catch (e) {
       setError("Erro ao remover.");

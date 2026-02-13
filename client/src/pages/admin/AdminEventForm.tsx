@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { apiGet, apiPost } from "../../api";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "../../api";
 
 type EventRow = {
   id: string;
@@ -27,7 +27,7 @@ function toDatetimeLocal(iso?: string | null) {
 export default function AdminEventForm() {
   const { id } = useParams();
   const editing = !!id;
-  const nav = useNavigate();
+  const navigate = useNavigate();
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -77,7 +77,6 @@ export default function AdminEventForm() {
     fd.append("file", file);
     if (editing && id) fd.append("event_id", id);
 
-    // Corrigido para usar a URL base da API
     const baseUrl = (import.meta as any).env.VITE_API_BASE || "";
     const r = await fetch(`${baseUrl}/api/admin/upload`, {
       method: "POST",
@@ -109,11 +108,11 @@ export default function AdminEventForm() {
       if (!editing) payload.create_default_drinks = createDefaultDrinks;
 
       if (editing) {
-        await apiPost(`/admin/events/${id}`, payload, "PUT"); // Mudado de PATCH para PUT para coincidir com o servidor
-        nav("/admin");
+        await apiPut(`/admin/events/${id}`, payload);
+        navigate("/admin");
       } else {
         const r = await apiPost<{ id: string }>(`/admin/events`, payload);
-        nav(`/admin/events/${r.id}/options`);
+        navigate(`/admin/events/${r.id}/options`);
       }
     } catch (e: any) {
       setError(String(e?.message ?? e));
@@ -239,69 +238,6 @@ export default function AdminEventForm() {
                 )}
               </div>
 
-              <div className="field" style={{ marginTop: '16px' }}>
-                <span>Galeria de Fotos (Até 3)</span>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginTop: '8px' }}>
-                  {galleryUrls.map((url, index) => (
-                    <div key={index} style={{ 
-                      border: '2px dashed var(--border)', 
-                      borderRadius: 'var(--radius-sm)',
-                      padding: '8px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '8px',
-                      minHeight: '120px',
-                      justifyContent: 'center'
-                    }}>
-                      {url ? (
-                        <div style={{ position: 'relative', width: '100%' }}>
-                          <img src={url} alt={`Galeria ${index + 1}`} style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '4px' }} />
-                          <button 
-                            className="btn secondary small" 
-                            style={{ position: 'absolute', top: '-8px', right: '-8px', padding: '4px', borderRadius: '50%', width: '24px', height: '24px' }}
-                            onClick={() => {
-                              const newUrls = [...galleryUrls];
-                              newUrls[index] = "";
-                              setGalleryUrls(newUrls);
-                            }}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ) : (
-                        <div style={{ textAlign: 'center' }}>
-                          <input
-                            type="file"
-                            id={`gallery-${index}`}
-                            accept="image/*"
-                            style={{ display: 'none' }}
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              try {
-                                setLoading(true);
-                                const uploadedUrl = await uploadImage(file);
-                                const newUrls = [...galleryUrls];
-                                newUrls[index] = uploadedUrl;
-                                setGalleryUrls(newUrls);
-                              } catch (err: any) {
-                                setError(String(err?.message ?? err));
-                              } finally {
-                                setLoading(false);
-                              }
-                            }}
-                          />
-                          <label htmlFor={`gallery-${index}`} style={{ cursor: 'pointer', fontSize: '12px', color: 'var(--primary)', fontWeight: 600 }}>
-                            + Foto {index + 1}
-                          </label>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {!editing && (
                 <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
                   <input
@@ -327,7 +263,7 @@ export default function AdminEventForm() {
                 </button>
                 <button
                   className="btn secondary large"
-                  onClick={() => nav("/admin")}
+                  onClick={() => navigate("/admin")}
                   disabled={loading}
                 >
                   Cancelar

@@ -6,15 +6,6 @@ import { createClient } from "@supabase/supabase-js";
 import { env } from "./env.js";
 
 const router = express.Router();
-
-// Middleware para evitar cache em todas as rotas de autenticação
-router.use((req, res, next) => {
-  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-  res.setHeader("Pragma", "no-cache");
-  res.setHeader("Expires", "0");
-  next();
-});
-
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
@@ -121,8 +112,6 @@ router.post("/register", async (req, res) => {
     secure: true,     // Necessário para SameSite: none
     path: "/",
     maxAge: 30 * 24 * 60 * 60 * 1000,
-    // @ts-ignore - Alguns tipos de express podem não ter partitioned ainda
-    partitioned: true, 
   });
 
   res.json({ ok: true, user: { id: newUser.id, email, full_name, is_admin: newUser.is_admin } });
@@ -169,8 +158,6 @@ router.post("/login", async (req, res) => {
     secure: true,     // Necessário para SameSite: none
     path: "/",
     maxAge: 30 * 24 * 60 * 60 * 1000,
-    // @ts-ignore
-    partitioned: true,
   });
 
   res.json({ ok: true, user: { id: user.id, email: user.email, full_name: user.full_name, is_admin: user.is_admin } });
@@ -181,37 +168,15 @@ router.post("/logout", (req, res) => {
   res.clearCookie(USER_COOKIE, { 
     path: "/",
     sameSite: "none",
-    secure: true,
-    // @ts-ignore
-    partitioned: true
+    secure: true
   });
   res.json({ ok: true });
 });
 
 // Verificar se usuário está logado
-router.get("/me", async (req, res) => {
+router.get("/me", (req, res) => {
   const userId = getUserId(req);
   if (!userId) {
-    res.json({ authenticated: false });
-    return;
-  }
-
-  // Verifica se o usuário ainda existe no banco
-  const { data: user, error } = await supabase
-    .from("users")
-    .select("id")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (error || !user) {
-    // Se o usuário foi deletado no Supabase, limpa o cookie "fantasma"
-    res.clearCookie(USER_COOKIE, { 
-      path: "/",
-      sameSite: "none",
-      secure: true,
-      // @ts-ignore
-      partitioned: true
-    });
     res.json({ authenticated: false });
     return;
   }

@@ -12,17 +12,36 @@ export default function Header({ showLogout = false, title }: HeaderProps) {
   const [userLoggedIn, setUserLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loadingAuth, setLoadingAuth] = useState(true);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    // Fecha o menu ao mudar de rota
+    setIsMenuOpen(false);
+
     async function checkAuth() {
       try {
         // Primeiro verificamos se o usuário está autenticado
-        const meRes = await apiGet<{ authenticated: boolean }>("/user/me");
+        const meRes = await apiGet<{ authenticated: boolean, userId?: string }>("/user/me");
         if (meRes.authenticated) {
           setUserLoggedIn(true);
-          // Se autenticado, buscamos o perfil completo para ver se é admin
-          const profileRes = await apiGet<{ user: { is_admin: boolean } }>("/user/profile");
-          setIsAdmin(!!profileRes.user?.is_admin);
+          
+          // Se for o admin especial pelo código, já definimos como admin
+          if (meRes.userId === "admin") {
+            setIsAdmin(true);
+          } else {
+            // Se autenticado via login normal, buscamos o perfil para ver se é admin no banco
+            const profileRes = await apiGet<{ user: { is_admin: boolean } }>("/user/profile");
+            setIsAdmin(!!profileRes.user?.is_admin);
+          }
         } else {
           setUserLoggedIn(false);
           setIsAdmin(false);
@@ -36,59 +55,121 @@ export default function Header({ showLogout = false, title }: HeaderProps) {
       }
     }
     checkAuth();
-  }, []);
+  }, [navigate]);
 
   async function handleLogout() {
     try {
-      await apiPost("/user/logout", {});
-      // Limpa estados locais antes de navegar
+      // Tenta deslogar em ambos os endpoints por segurança
+      await Promise.allSettled([
+        apiPost("/user/logout", {}),
+        apiPost("/auth/logout", {})
+      ]);
+    } catch (err) {
+      console.error("Erro ao fazer logout no servidor:", err);
+    } finally {
+      // Limpa estados locais e redireciona SEMPRE, mesmo se a rede falhar
       setUserLoggedIn(false);
       setIsAdmin(false);
+      
+      // Limpeza manual de cookies (fallback)
+      document.cookie = "sf_user=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+      
       navigate("/");
-      window.location.reload();
-    } catch (err: any) {
-      console.error("Erro ao fazer logout:", err);
+      // Força recarregamento para garantir que todos os estados de todos os componentes sejam resetados
+      window.location.href = "/";
     }
   }
 
   return (
-    <header className="topbar">
-      <div className="container header-container">
-        <Link className="brand" to="/">
-          {title || "Sistema de Festas"}
-        </Link>
-        <nav className="nav">
-          {!showLogout && <Link to="/" className="nav-link">Eventos</Link>}
-          
-          {!loadingAuth && userLoggedIn && (
-            <>
-              <Link to="/profile" className="nav-link">
-                Perfil
-              </Link>
-              <Link to="/my-registrations" className="nav-link">
-                Inscrições
-              </Link>
-              {isAdmin && (
-                <Link to="/admin" className="btn primary-glow small">
-                  Admin
-                </Link>
-              )}
-              <button
-                className="btn small secondary"
-                onClick={handleLogout}
-              >
-                Sair
-              </button>
-            </>
-          )}
+    <>
+      <header className={`topbar ${isScrolled ? 'scrolled' : ''}`}>
+        <div className="header-container">
+          <Link 
+            className="brand" 
+            to="/"
+          >
+            {title || "Festas"}
+          </Link>
 
-          {!loadingAuth && !userLoggedIn && !showLogout && (
-            <Link to="/user-auth" className="btn primary small">
-              Entrar
-            </Link>
-          )}
-        </nav>
+          <nav className="nav desktop-only">
+            {!showLogout && <Link to="/" className="nav-link">Eventos</Link>}
+            
+            {!loadingAuth && userLoggedIn && (
+              <>
+                <Link to="/profile" className="nav-link">Perfil</Link>
+                <Link to="/my-registrations" className="nav-link">Inscrições</Link>
+                {isAdmin && (
+                  <Link to="/admin" className="nav-link">Admin</Link>
+                )}
+                <button 
+                  onClick={handleLogout}
+                  className="nav-link logout-btn"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  Sair
+                </button>
+              </>
+            )}
+
+            {!loadingAuth && !userLoggedIn && !showLogout && (
+              <Link to="/user-auth" className="nav-link-cta">Entrar</Link>
+            )}
+          </nav>
+
+          <button 
+            className={`menu-toggle ${isMenuOpen ? 'open' : ''}`} 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Menu"
+          >
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+      </header>
+
+      <div className={`mobile-menu-overlay ${isMenuOpen ? 'open' : ''}`}>
+        <div className="mobile-menu-content">
+          <nav className="mobile-nav">
+            {!showLogout && (
+              <Link to="/" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>
+                Eventos
+              </Link>
+            )}
+            
+            {!loadingAuth && userLoggedIn && (
+              <>
+                <Link to="/profile" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>
+                  Perfil
+                </Link>
+                <Link to="/my-registrations" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>
+                  Inscrições
+                </Link>
+                {isAdmin && (
+                  <Link to="/admin" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>
+                    Painel Admin
+                  </Link>
+                )}
+                <button 
+                  onClick={() => {
+                    handleLogout();
+                    setIsMenuOpen(false);
+                  }}
+                  className="mobile-nav-link logout-btn"
+                  style={{ background: 'none', border: 'none', textAlign: 'left', width: '100%', cursor: 'pointer' }}
+                >
+                  Sair
+                </button>
+              </>
+            )}
+
+            {!loadingAuth && !userLoggedIn && !showLogout && (
+              <Link to="/user-auth" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>
+                Entrar / Cadastrar
+              </Link>
+            )}
+          </nav>
+        </div>
       </div>
-    </header>
+    </>
   );
 }

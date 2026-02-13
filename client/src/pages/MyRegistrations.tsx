@@ -108,83 +108,70 @@ export default function MyRegistrations() {
 
           {loading ? (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                border: '3px solid var(--border)',
-                borderTopColor: 'var(--primary)',
-                borderRadius: '50%',
-                animation: 'spin 0.8s linear infinite',
-                margin: '0 auto 16px'
-              }} />
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              <div className="skeleton" style={{ width: '40px', height: '40px', borderRadius: '50%', margin: '0 auto 16px' }} />
               <p className="muted">Carregando inscrições...</p>
             </div>
           ) : registrations.length === 0 ? (
-            <div className="empty-state" style={{ padding: '60px 24px' }}>
+            <div className="empty-state">
               <div className="empty-state-icon">📋</div>
               <h3>Nenhuma inscrição encontrada</h3>
               <p>Você ainda não se inscreveu em nenhum evento.</p>
-              <Link to="/" className="btn primary" style={{ marginTop: '20px' }}>
+              <Link to="/" className="btn primary" style={{ marginTop: '24px' }}>
                 Explorar Eventos
               </Link>
             </div>
           ) : (
-            <div className="stack tight">
+            <div className="grid">
               {registrations.map((reg) => (
-                <div key={reg.id} className="admin-event-row">
-                  <div className="row between" style={{ flexWrap: 'wrap', gap: '20px' }}>
-                    <div style={{ flex: 1, minWidth: '200px' }}>
-                      <h3 style={{ margin: '0 0 6px 0', fontSize: '19px' }}>
-                        {reg.events.title}
-                      </h3>
-                      <div className="muted small">
-                        {new Date(reg.events.date_time).toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' })} &middot; {reg.events.location}
-                      </div>
-                      <div style={{ marginTop: '12px', fontSize: '14px' }}>
-                        <div style={{ marginBottom: '6px' }}>
-                          <strong>Seu Nome:</strong> {reg.full_name}
-                        </div>
-                        <div style={{ marginBottom: '6px' }}>
-                          <strong>E-mail:</strong> {reg.email}
-                        </div>
-                        <div style={{ marginBottom: '6px' }}>
-                          <strong>Telefone:</strong> {reg.phone}
-                        </div>
-                        {reg.registration_selections.length > 0 && (
-                          <div style={{ marginBottom: '6px' }}>
-                            <strong>Bebidas:</strong>{" "}
-                            {reg.registration_selections.map((sel) => sel.event_options.name).join(", ")}
-                          </div>
-                        )}
-                        {reg.allergies && (
-                          <div style={{ marginBottom: '6px' }}>
-                            <strong>Alergias:</strong> {reg.allergies}
-                          </div>
-                        )}
-                      </div>
+                <div key={reg.id} className="card">
+                  <div className="card-content">
+                    <div className="row between" style={{ marginBottom: '12px' }}>
+                      <div className="status-badge published">Inscrito</div>
+                      <span className="muted small">{new Date(reg.created_at).toLocaleDateString('pt-BR')}</span>
+                    </div>
+                    
+                    <h3 className="card-title">{reg.events.title}</h3>
+                    
+                    <div className="card-meta" style={{ marginBottom: '16px' }}>
+                      <span>📅 {new Date(reg.events.date_time).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}</span>
+                      <span>•</span>
+                      <span>📍 {reg.events.location}</span>
                     </div>
 
-                    <div className="row wrap" style={{ gap: '8px' }}>
-                      <a
-                        className="btn secondary small"
-                        href={`/e/${reg.events.slug}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Ver Evento
-                      </a>
+                    <div className="stack tight" style={{ padding: '16px', background: 'var(--bg-subtle)', border: '1px solid var(--glass-border)', borderRadius: '16px', fontSize: '14px' }}>
+                      <div className="row between">
+                        <span className="muted">Nome</span>
+                        <span>{reg.full_name}</span>
+                      </div>
+                      <div className="row between">
+                        <span className="muted">WhatsApp</span>
+                        <span>{reg.phone}</span>
+                      </div>
+                      {reg.registration_selections.length > 0 && (
+                        <div className="row between">
+                          <span className="muted">Preferências</span>
+                          <span>{reg.registration_selections.map((sel) => sel.event_options.name).join(", ")}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="card-footer" style={{ borderTop: 'none', display: 'flex', gap: '12px' }}>
+                      <Link to={`/e/${reg.events.slug}`} className="btn secondary small" style={{ flex: 1 }}>
+                        Ver Detalhes
+                      </Link>
                       <button
-                        className="btn ghost small"
+                        className="btn small"
                         onClick={() => handleCancel(reg.id)}
                         disabled={cancelingId === reg.id}
                         style={{
+                          background: 'var(--error-bg)',
                           color: 'var(--error)',
-                          cursor: cancelingId === reg.id ? 'not-allowed' : 'pointer',
+                          border: '1px solid var(--error)',
                           opacity: cancelingId === reg.id ? 0.5 : 1,
+                          flex: 1
                         }}
                       >
-                        {cancelingId === reg.id ? "Cancelando..." : "Cancelar"}
+                        {cancelingId === reg.id ? "..." : "Cancelar"}
                       </button>
                     </div>
                   </div>

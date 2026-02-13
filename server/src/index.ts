@@ -135,8 +135,13 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-app.post("/api/auth/logout", (_req, res) => {
-  res.clearCookie("sf_user", { path: "/", sameSite: "none", secure: true });
+app.post("/api/auth/logout", (req, res) => {
+  console.log(`[Logout] Clearing cookie sf_user for userId: ${getUserId(req)}`);
+  res.clearCookie("sf_user", { 
+    path: "/", 
+    sameSite: "none", 
+    secure: true 
+  });
   res.json({ ok: true });
 });
 
@@ -149,6 +154,30 @@ function toISODateTime(value: string | null | undefined): string | null {
 }
 
 // ---------- Public ----------
+app.get("/api/public/stats", async (_req, res) => {
+  try {
+    const { count: eventCount, error: eErr } = await supabase
+      .from("events")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null);
+    
+    if (eErr) throw eErr;
+
+    const { count: regCount, error: rErr } = await supabase
+      .from("registrations")
+      .select("id", { count: "exact", head: true });
+
+    if (rErr) throw rErr;
+
+    res.json({ 
+      eventCount: eventCount || 0, 
+      registrationCount: regCount || 0 
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get("/api/public/events", async (_req, res) => {
   const { data, error } = await supabase
     .from("events")
@@ -470,20 +499,39 @@ app.post("/api/admin/events", requireAdmin, async (req, res) => {
 
   const { create_default_drinks, ...eventData } = parsed.data;
   
+  console.log(`[POST] Creating event with data:`, JSON.stringify(eventData));
+
+  let dateTimeISO: string;
+  let deadlineISO: string | null = null;
+
+  try {
+    dateTimeISO = toISODateTime(eventData.date_time)!;
+    if (eventData.registration_deadline) {
+      deadlineISO = toISODateTime(eventData.registration_deadline);
+    }
+  } catch (err: any) {
+    console.error(`[POST] Date conversion error:`, err.message);
+    res.status(400).json({ error: err.message });
+    return;
+  }
+
   const { data: event, error } = await supabase
     .from("events")
     .insert({
       ...eventData,
-      date_time: toISODateTime(eventData.date_time)!,
-      registration_deadline: toISODateTime(eventData.registration_deadline),
+      date_time: dateTimeISO,
+      registration_deadline: deadlineISO,
     })
     .select("id")
     .single();
 
   if (error) {
+    console.error(`[POST] Supabase error:`, error.message);
     res.status(500).json({ error: error.message });
     return;
   }
+
+  console.log(`[POST] Event created with ID:`, event.id);
 
   if (create_default_drinks && event?.id) {
     const drinkRows = DEFAULT_DRINKS.map((name) => ({
@@ -751,40 +799,4 @@ app.get("/api/health", (_req, res) => {
 const port = env.PORT || 3001;
 app.listen(port, "0.0.0.0", () => {
   console.log(`[server] running on http://0.0.0.0:${port}`);
-
-  // Keep-Alive: Ciclo de pings sequenciais (8, 10, 12 min) com segundos aleatórios
-  // IMPORTANTE: Para o Render não hibernar, o ping DEVE ser na URL externa (DNS)
-  const EXTERNAL_URL = "https://sistema-festas-backend.onrender.com";
-  
-  const intervals = [8, 10, 12]; // Minutos
-  let currentStep = 0;
-
-  const keepAlive = () => {
-    const baseMinutes = intervals[currentStep];
-    const randomSeconds = Math.floor(Math.random() * 60);
-    const ms = (baseMinutes * 60 + randomSeconds) * 1000;
-    
-    console.log(`[Keep-Alive] Próximo ping externo em ${baseMinutes}min ${randomSeconds}s...`);
-
-    setTimeout(async () => {
-      try {
-        const endpoint = "/api/health";
-        // O fetch na URL externa garante que o tráfego passe pelo roteador do Render e zere o timer de 15min
-        const res = await fetch(`${EXTERNAL_URL}${endpoint}`);
-        if (res.ok) {
-          console.log(`[Keep-Alive] Ping externo OK: ${baseMinutes}m${randomSeconds}s`);
-        } else {
-          console.warn(`[Keep-Alive] Ping externo retornou status ${res.status}`);
-        }
-      } catch (err) {
-        console.warn(`[Keep-Alive] Erro ao tentar ping externo:`, err);
-      }
-      
-      currentStep = (currentStep + 1) % intervals.length;
-      keepAlive();
-    }, ms);
-  };
-  
-  // Inicia o ciclo
-  keepAlive();
 });

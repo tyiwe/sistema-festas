@@ -101,7 +101,30 @@ export default function EventPublic() {
       .catch(() => setAlreadyRegistered(false));
   }, [userLoggedIn, slug]);
 
-  const selectedIds = useMemo(() => Object.entries(selected).filter(([, v]) => v).map(([k]) => k), [selected]);
+  // Efeito de parallax simples para a galeria
+  useEffect(() => {
+    if (tab !== "details") return;
+    
+    const handleScroll = () => {
+      // Não aplicar efeito se for mobile (performance e evitar bugs visual)
+      if (window.innerWidth < 900) return;
+
+      const images = document.querySelectorAll('.parallax-img');
+      images.forEach((img, i) => {
+        const speed = (i + 1) * 0.1;
+        const rect = img.getBoundingClientRect();
+        if (rect.top < window.innerHeight && rect.bottom > 0) {
+          const yOffset = (window.innerHeight - rect.top) * speed;
+          (img as HTMLElement).style.transform = `translateY(${yOffset * -0.2}px) ${i % 2 === 0 ? 'translateX(-10px)' : 'translateX(10px)'}`;
+        }
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll);
+     return () => window.removeEventListener('scroll', handleScroll);
+   }, [tab]);
+
+   const selectedIds = useMemo(() => Object.entries(selected).filter(([, v]) => v).map(([k]) => k), [selected]);
 
   async function submit() {
     if (!slug) return;
@@ -155,244 +178,267 @@ export default function EventPublic() {
   return (
     <>
       <Header />
-      <div className="container" style={{ paddingTop: '100px', paddingBottom: '100px' }}>
-        <main className="stack">
-          <div className="stack tight" style={{ textAlign: 'center', marginBottom: '40px' }}>
-            <h1 className="hero-title" style={{ fontSize: 'clamp(2.5rem, 8vw, 4rem)', marginBottom: '16px' }}>
-              {event.title.split(' ').map((word, i) => i === event.title.split(' ').length - 1 ? <span key={i} className="gradient-text">{word} </span> : word + ' ')}
-            </h1>
-            <div className="row center muted" style={{ gap: '16px', fontSize: '18px', fontWeight: 500 }}>
-              <span className="row" style={{ gap: '6px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                {event.location}
-              </span>
-              <span>•</span>
-              <span className="row" style={{ gap: '6px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                {new Date(event.date_time).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
-              </span>
+      
+      {/* Immersive Hero Section */}
+      <div className="event-hero-wrapper fade-in">
+        <div className="event-hero-bg">
+          <img src={event.cover_image_url || `https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=1600&auto=format&fit=crop`} alt="" />
+          <div className="event-hero-overlay"></div>
+        </div>
+        
+        <div className="container">
+          <div className="event-hero-content">
+            <div className="status-badge published" style={{ marginBottom: '16px' }}>Evento Confirmado</div>
+            <h1 className="hero-title">{event.title}</h1>
+            <div className="event-meta-row">
+              <span className="meta-item">📅 {new Date(event.date_time).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+              <span className="meta-divider">•</span>
+              <span className="meta-item">📍 {event.location}</span>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Tabs */}
-          <div className="form-card" style={{ padding: '6px', background: 'var(--bg-alt)', borderRadius: 'var(--radius-sm)', marginBottom: '32px', maxWidth: '400px', margin: '0 auto 32px' }}>
-            <div className="row" style={{ gap: '4px' }}>
-              <button 
-                onClick={() => setTab("details")} 
-                className={`btn ${tab === "details" ? "primary" : "ghost"}`}
-                style={{ flex: 1, borderRadius: '10px', padding: '10px', fontSize: '14px' }}
-              >
-                Detalhes
-              </button>
-              <button 
-                onClick={() => setTab("signup")} 
-                className={`btn ${tab === "signup" ? "primary" : "ghost"}`}
-                style={{ flex: 1, borderRadius: '10px', padding: '10px', fontSize: '14px' }}
-              >
-                Inscrição
-              </button>
-            </div>
+      <div className="container" style={{ marginTop: '-40px', position: 'relative', zIndex: 10, paddingBottom: '100px' }}>
+        <main style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          
+          <Link to="/" style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '8px', 
+            color: 'white', 
+            textDecoration: 'none', 
+            fontSize: '14px', 
+            marginBottom: '24px', 
+            opacity: 0.8,
+            fontWeight: 500 
+          }} className="stagger-1">
+            ← Voltar para Eventos
+          </Link>
+
+          {/* Segmented Control Tabs */}
+          <div className="segmented-control stagger-2" style={{ marginBottom: '32px' }}>
+            <button 
+              className={tab === "signup" ? "active" : ""} 
+              onClick={() => setTab("signup")}
+            >
+              Inscrição
+            </button>
+            <button 
+              className={tab === "details" ? "active" : ""} 
+              onClick={() => setTab("details")}
+            >
+              Detalhes do Evento
+            </button>
           </div>
 
-          {/* Error */}
+          {/* Error Message */}
           {error && (
-            <div style={{
-              padding: '14px 20px',
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--error-bg)',
-              border: '1px solid var(--error)',
-              color: 'var(--error)',
-              fontSize: '15px',
-              textAlign: 'center'
-            }}>
+            <div className="login-error stagger-2">
               {error}
             </div>
           )}
 
-          {/* Details Tab */}
-          {tab === "details" ? (
-            <div className="details-card">
-              <div className="stack tight" style={{ padding: 0 }}>
-                <h3>Sobre o evento</h3>
-                <p className="muted" style={{ lineHeight: '1.6' }}>
-                  {event.description || "Sem descrição disponível."}
-                </p>
+          {/* Tab Content */}
+          <div className="stagger-3">
+            {tab === "details" ? (
+              <div className="details-layout">
+                {/* Info Column */}
+                <div className="sticky-info">
+                  <div className="login-card" style={{ maxWidth: 'none', marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '28px', marginBottom: '20px', fontWeight: 800, letterSpacing: '-0.02em' }}>Sobre o evento</h3>
+                    <p style={{ color: 'var(--text-muted)', lineHeight: '1.8', fontSize: '17px', whiteSpace: 'pre-wrap', marginBottom: '32px' }}>
+                      {event.description || "Nenhuma descrição detalhada disponível para este evento."}
+                    </p>
 
-                <div className="grid" style={{ marginTop: '24px', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-                  <div style={{ padding: '20px', background: 'var(--bg-alt)', borderRadius: 'var(--radius-sm)' }}>
-                    <span className="small muted" style={{ fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Localização</span>
-                    <span style={{ fontWeight: 500 }}>{event.location}</span>
-                  </div>
-                  <div style={{ padding: '20px', background: 'var(--bg-alt)', borderRadius: 'var(--radius-sm)' }}>
-                    <span className="small muted" style={{ fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Data e Hora</span>
-                    <span style={{ fontWeight: 500 }}>{new Date(event.date_time).toLocaleString('pt-BR')}</span>
-                  </div>
-                </div>
-
-                {event.gallery_image_urls && event.gallery_image_urls.length > 0 && (
-                  <div style={{ marginTop: '32px' }}>
-                    <span className="small muted" style={{ fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Galeria</span>
-                    <div className="gallery">
-                      {event.gallery_image_urls.map((u, i) => (
-                        <img key={i} src={u} alt="" />
-                      ))}
+                    <div className="stack" style={{ gap: '16px' }}>
+                      <div className="bento-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ fontSize: '24px' }}>📍</div>
+                        <div>
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block' }}>Onde</span>
+                          <span style={{ fontSize: '16px', fontWeight: 600 }}>{event.location}</span>
+                        </div>
+                      </div>
+                      <div className="bento-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ fontSize: '24px' }}>📅</div>
+                        <div>
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block' }}>Quando</span>
+                          <span style={{ fontSize: '16px', fontWeight: 600 }}>{new Date(event.date_time).toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' })}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
 
-                <div style={{ marginTop: '32px', textAlign: 'center' }}>
-                  <button className="btn primary large" onClick={() => setTab("signup")}>
-                    Quero me inscrever
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* Signup Tab */
-            <div className="form-card">
-              {!loadingAuth && !userLoggedIn ? (
-                /* Bloqueio de Inscrição sem Login */
-                <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
-                  <h3 style={{ marginBottom: '12px' }}>Login Necessário</h3>
-                  <p className="muted" style={{ marginBottom: '24px' }}>
-                    Para garantir a segurança dos eventos, você precisa estar logado para se inscrever.
-                  </p>
-                  <button className="btn primary full-width" onClick={() => navigate("/user-auth")}>
-                    Fazer Login ou Cadastrar-se
-                  </button>
-                </div>
-              ) : alreadyRegistered ? (
-                /* Já inscrito */
-                <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>✓</div>
-                  <h3 style={{ marginBottom: '12px' }}>Você já está inscrito!</h3>
-                  <p className="muted" style={{ marginBottom: '24px' }}>
-                    Sua vaga está garantida. Confira os detalhes em sua área do cliente.
-                  </p>
-                  <Link className="btn primary" to="/my-registrations">
-                    Ver Minhas Inscrições
-                  </Link>
-                </div>
-              ) : (
-                <>
-                  {/* Stepper */}
-                  <div className="stepper">
-                    <div className={`step ${step >= 1 ? "active" : ""}`} />
-                    <div className={`step ${step >= 2 ? "active" : ""}`} />
-                    <div className={`step ${step >= 3 ? "active" : ""}`} />
-                  </div>
-
-                  {/* Step 1: Personal info */}
-                  {step === 1 && (
-                    <div className="stack tight" style={{ padding: 0 }}>
-                      <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-                        <h3>Seus dados</h3>
-                        <p className="muted small" style={{ marginTop: '4px' }}>Confirme suas informações para a lista de convidados.</p>
-                      </div>
-                      <div className="field">
-                        <span>Nome Completo</span>
-                        <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Como devemos te chamar?" />
-                      </div>
-                      <div className="field">
-                        <span>E-mail</span>
-                        <input type="email" value={email} disabled style={{ opacity: 0.6 }} />
-                      </div>
-                      <div className="field">
-                        <span>Telefone</span>
-                        <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(00) 00000-0000" />
-                      </div>
-                      <div className="field">
-                        <span>Alergias ou Restrições</span>
-                        <input value={allergies} onChange={(e) => setAllergies(e.target.value)} placeholder="Opcional" />
-                      </div>
-
-                      <button
-                        className="btn primary full-width"
-                        style={{ marginTop: '12px' }}
-                        onClick={() => setStep(2)}
-                        disabled={fullName.trim().length < 3 || !phone.trim()}
-                      >
-                        Continuar
+                    <div style={{ marginTop: '40px' }}>
+                      <button className="btn primary large full-width" onClick={() => setTab("signup")}>
+                        Quero me inscrever agora
                       </button>
                     </div>
-                  )}
+                  </div>
+                </div>
 
-                  {/* Step 2: Options */}
-                  {step === 2 && (
-                    <div className="stack tight" style={{ padding: 0 }}>
-                      <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-                        <h3>Bebidas</h3>
-                        <p className="muted small" style={{ marginTop: '4px' }}>Selecione o que você gostaria de beber.</p>
+                {/* Gallery Column */}
+                <div className="scrolling-gallery">
+                  {event.gallery_image_urls && event.gallery_image_urls.length > 0 ? (
+                    event.gallery_image_urls.map((url, i) => (
+                      <img 
+                        key={i} 
+                        src={url} 
+                        alt={`Gallery ${i}`} 
+                        className="parallax-img animate-float"
+                        style={{ animationDelay: `${i * 0.2}s` }}
+                      />
+                    ))
+                  ) : (
+                    <div className="login-card" style={{ textAlign: 'center', opacity: 0.5, padding: '60px 20px' }}>
+                      <div style={{ fontSize: '40px', marginBottom: '16px' }}>📸</div>
+                      <p>Galeria em breve</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Registration Form */
+              <div className="login-card" style={{ maxWidth: 'none' }}>
+                {!loadingAuth && !userLoggedIn ? (
+                  <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '24px' }}>🔒</div>
+                    <h3 style={{ fontSize: '24px', marginBottom: '12px' }}>Acesso Restrito</h3>
+                    <p style={{ color: 'var(--text-muted)', marginBottom: '32px', maxWidth: '400px', margin: '0 auto 32px' }}>
+                      Para garantir a melhor experiência e segurança, você precisa estar logado para se inscrever neste evento.
+                    </p>
+                    <button className="btn primary large full-width" onClick={() => navigate("/user-auth")}>
+                      Entrar ou Criar Conta
+                    </button>
+                  </div>
+                ) : alreadyRegistered ? (
+                  <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '24px' }}>✨</div>
+                    <h3 style={{ fontSize: '24px', marginBottom: '12px' }}>Presença Confirmada!</h3>
+                    <p style={{ color: 'var(--text-muted)', marginBottom: '32px', maxWidth: '400px', margin: '0 auto 32px' }}>
+                      Você já está na lista de convidados para este evento. Prepare o look e aproveite!
+                    </p>
+                    <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+                      <Link to="/my-registrations" className="btn primary">Minhas Inscrições</Link>
+                      <Link to="/" className="btn secondary">Ver Outros Eventos</Link>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="stepper" style={{ marginBottom: '40px' }}>
+                      <div className={`step ${step >= 1 ? "active" : ""}`} style={{ flex: 1, height: '4px', borderRadius: '2px', background: step >= 1 ? 'var(--primary)' : 'var(--border)' }}></div>
+                      <div className={`step ${step >= 2 ? "active" : ""}`} style={{ flex: 1, height: '4px', borderRadius: '2px', background: step >= 2 ? 'var(--primary)' : 'var(--border)' }}></div>
+                      <div className={`step ${step >= 3 ? "active" : ""}`} style={{ flex: 1, height: '4px', borderRadius: '2px', background: step >= 3 ? 'var(--primary)' : 'var(--border)' }}></div>
+                    </div>
+
+                    {step === 1 && (
+                      <div className="auth-form">
+                        <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+                          <h3 style={{ fontSize: '22px' }}>Informações de Contato</h3>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Confirme seus dados para a lista oficial.</p>
+                        </div>
+                        <div className="field">
+                          <span>Nome Completo</span>
+                          <input 
+                            value={fullName} 
+                            onChange={(e) => setFullName(e.target.value)} 
+                            placeholder="Como você quer aparecer na lista?" 
+                          />
+                        </div>
+                        <div className="field">
+                          <span>E-mail</span>
+                          <input type="email" value={email} disabled style={{ opacity: 0.6, cursor: 'not-allowed' }} />
+                        </div>
+                        <div className="field">
+                          <span>WhatsApp / Telefone</span>
+                          <input 
+                            value={phone} 
+                            onChange={(e) => setPhone(e.target.value)} 
+                            placeholder="(00) 00000-0000" 
+                          />
+                        </div>
+                        <div className="field">
+                          <span>Alergias ou Restrições Alimentares</span>
+                          <input 
+                            value={allergies} 
+                            onChange={(e) => setAllergies(e.target.value)} 
+                            placeholder="Alguma observação importante?" 
+                          />
+                        </div>
+                        <button 
+                          className="btn primary large full-width" 
+                          style={{ marginTop: '12px' }}
+                          disabled={fullName.trim().length < 3 || !phone.trim()}
+                          onClick={() => setStep(2)}
+                        >
+                          Próximo Passo
+                        </button>
                       </div>
-                      
-                      <div className="options-grid" style={{ display: 'grid', gap: '12px' }}>
-                        {options.length > 0 ? options.map((o) => (
-                          <label key={o.id} style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '12px', 
-                            padding: '16px', 
-                            background: 'var(--bg-alt)', 
-                            borderRadius: 'var(--radius-sm)',
-                            cursor: 'pointer',
-                            border: selected[o.id] ? '1px solid var(--primary)' : '1px solid transparent'
-                          }}>
-                            <input
-                              type="checkbox"
-                              checked={selected[o.id]}
-                              onChange={(e) => setSelected({ ...selected, [o.id]: e.target.checked })}
-                              style={{ width: '20px', height: '20px' }}
-                            />
-                            <span style={{ fontWeight: 500 }}>{o.name}</span>
-                          </label>
-                        )) : (
-                          <p className="muted" style={{ textAlign: 'center', padding: '20px' }}>Este evento não possui opções de bebidas.</p>
+                    )}
+
+                    {step === 2 && (
+                      <div className="auth-form">
+                        <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+                          <h3 style={{ fontSize: '22px' }}>Preferências</h3>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Personalize sua experiência no evento.</p>
+                        </div>
+
+                        {options.length > 0 && (
+                          <div className="field">
+                            <span>O que você gostaria de beber?</span>
+                            <div className="options-grid">
+                              {options.map((o) => (
+                                <div 
+                                  key={o.id} 
+                                  className={`option-item ${selected[o.id] ? 'selected' : ''}`}
+                                  onClick={() => setSelected({ ...selected, [o.id]: !selected[o.id] })}
+                                >
+                                  <input 
+                                    type="checkbox" 
+                                    checked={selected[o.id]} 
+                                    onChange={() => {}} // Handle via parent click
+                                  />
+                                  <span style={{ fontWeight: 500, fontSize: '14px' }}>{o.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         )}
-                      </div>
 
-                      <div className="field" style={{ marginTop: '12px' }}>
-                        <span>Observações Adicionais</span>
-                        <textarea 
-                          value={notes} 
-                          onChange={(e) => setNotes(e.target.value)} 
-                          placeholder="Algo mais que precisamos saber?"
-                          style={{ 
-                            width: '100%', 
-                            padding: '12px', 
-                            borderRadius: 'var(--radius-sm)', 
-                            background: 'var(--bg-alt)', 
-                            border: 'none',
-                            minHeight: '80px',
-                            color: 'var(--text)'
-                          }}
-                        />
-                      </div>
+                        <div className="field">
+                          <span>Observações para a Organização</span>
+                          <textarea 
+                            value={notes} 
+                            onChange={(e) => setNotes(e.target.value)} 
+                            placeholder="Algo mais que gostaria de nos contar?"
+                            rows={4}
+                          />
+                        </div>
 
-                      <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-                        <button className="btn ghost" onClick={() => setStep(1)} style={{ flex: 1 }}>Voltar</button>
-                        <button className="btn primary" onClick={submit} style={{ flex: 2 }}>Confirmar Inscrição</button>
+                        <div style={{ display: 'flex', gap: '16px', marginTop: '12px' }}>
+                          <button className="btn secondary large" style={{ flex: 1 }} onClick={() => setStep(1)}>Voltar</button>
+                          <button className="btn primary large" style={{ flex: 2 }} onClick={submit}>Finalizar Inscrição</button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Step 3: Success */}
-                  {step === 3 && (
-                    <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                      <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎉</div>
-                      <h2 style={{ marginBottom: '12px' }}>Tudo pronto!</h2>
-                      <p className="muted" style={{ marginBottom: '32px' }}>
-                        Sua inscrição em <strong>{event.title}</strong> foi realizada com sucesso.
-                      </p>
-                      <Link className="btn primary full-width" to="/my-registrations">
-                        Ver Meus Convites
-                      </Link>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          )}
+                    {step === 3 && (
+                      <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                        <div style={{ fontSize: '80px', marginBottom: '24px' }}>🥂</div>
+                        <h2 style={{ fontSize: '32px', marginBottom: '16px' }}>Inscrição Realizada!</h2>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '40px', fontSize: '16px', maxWidth: '440px', margin: '0 auto 40px' }}>
+                          Parabéns, sua vaga em <strong>{event.title}</strong> está garantida! Você já pode conferir seu ingresso na área de inscrições.
+                        </p>
+                        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+                          <Link to="/my-registrations" className="btn primary large">Ver Meu Ingresso</Link>
+                          <Link to="/" className="btn secondary large">Voltar para a Home</Link>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </main>
       </div>
     </>

@@ -165,6 +165,7 @@ router.post("/login", async (req, res) => {
 
 // Logout de usuário
 router.post("/logout", (req, res) => {
+  console.log(`[User Logout] Clearing cookie ${USER_COOKIE} for userId: ${getUserId(req)}`);
   res.clearCookie(USER_COOKIE, { 
     path: "/",
     sameSite: "none",

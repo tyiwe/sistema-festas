@@ -104,39 +104,26 @@ export default function UserAuth() {
     <>
       <Header />
 
-      <div className="login-wrapper" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', paddingTop: '100px' }}>
-        <div className="form-card" style={{ maxWidth: '400px', width: '100%', padding: '40px' }}>
-          <div className="stack tight" style={{ textAlign: 'center', marginBottom: '32px' }}>
-            <h1 className="hero-title" style={{ fontSize: '32px', margin: 0 }}>
-              {mode === "login" ? "Bem-vindo de" : "Crie sua"} <span className="gradient-text">{mode === "login" ? "Volta" : "Conta"}</span>
-            </h1>
-            <p className="muted" style={{ fontSize: '16px' }}>
-              {mode === "login" ? "Entre para gerenciar suas inscrições." : "Cadastre-se para participar dos eventos."}
-            </p>
+      <div className="login-wrapper fade-in">
+        <div className="login-card stagger-1">
+          <div className="login-header stagger-2">
+            <h1 className="brand">Festas</h1>
+            <p>{mode === "login" ? "Acesse sua conta para continuar" : "Crie sua conta para participar dos eventos"}</p>
           </div>
 
           {error && (
-            <div className="login-error" style={{
-              padding: '12px',
-              borderRadius: '8px',
-              background: 'var(--error-bg)',
-              border: '1px solid var(--error)',
-              color: 'var(--error)',
-              fontSize: '14px',
-              marginBottom: '16px',
-              textAlign: 'center'
-            }}>
+            <div className="login-error">
               {error}
             </div>
           )}
 
           {mode === "login" ? (
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <form onSubmit={handleLogin} className="auth-form">
               <div className="field">
                 <span>E-mail</span>
                 <input
                   type="email"
-                  placeholder="seu@email.com"
+                  placeholder="exemplo@email.com"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   required
@@ -144,35 +131,21 @@ export default function UserAuth() {
               </div>
 
               <div className="field">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>Senha</span>
-                  <a 
-                    href={`https://wa.me/5511991336096?text=${encodeURIComponent(`Olá! Esqueci minha senha do Sistema de Festas e gostaria de recuperá-la. Meu e-mail é: ${loginEmail || "[seu e-mail]"}`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ fontSize: '12px', color: 'var(--primary)', textDecoration: 'none' }}
-                  >
-                    Esqueceu a senha?
-                  </a>
-                </div>
+                <span>Senha</span>
                 <input
                   type="password"
-                  placeholder="Sua senha"
+                  placeholder="Sua senha de acesso"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   required
                 />
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn primary large full-width"
-              >
+              <button type="submit" className="btn primary large full-width" disabled={loading}>
                 {loading ? "Entrando..." : "Entrar"}
               </button>
 
-              <div style={{ textAlign: 'center', fontSize: '14px', color: 'var(--text-muted)' }}>
+              <div className="auth-footer">
                 Não tem conta?{" "}
                 <button
                   type="button"
@@ -180,26 +153,19 @@ export default function UserAuth() {
                     setMode("register");
                     setError(null);
                   }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--primary)',
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                    fontSize: 'inherit',
-                  }}
+                  className="link-btn"
                 >
-                  Cadastre-se
+                  Cadastre-se agora
                 </button>
               </div>
             </form>
           ) : (
-            <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <form onSubmit={handleRegister} className="auth-form">
               <div className="field">
                 <span>Nome Completo</span>
                 <input
                   type="text"
-                  placeholder="Seu nome"
+                  placeholder="Como quer ser chamado"
                   value={registerFullName}
                   onChange={(e) => setRegisterFullName(e.target.value)}
                   required
@@ -210,7 +176,7 @@ export default function UserAuth() {
                 <span>E-mail</span>
                 <input
                   type="email"
-                  placeholder="seu@email.com"
+                  placeholder="exemplo@email.com"
                   value={registerEmail}
                   onChange={(e) => setRegisterEmail(e.target.value)}
                   required
@@ -218,10 +184,10 @@ export default function UserAuth() {
               </div>
 
               <div className="field">
-                <span>Confirmar E-mail</span>
+                <span>Confirme seu E-mail</span>
                 <input
                   type="email"
-                  placeholder="Confirme seu e-mail"
+                  placeholder="Repita o e-mail"
                   value={registerEmailConfirm}
                   onChange={(e) => setRegisterEmailConfirm(e.target.value)}
                   required
@@ -229,10 +195,10 @@ export default function UserAuth() {
               </div>
 
               <div className="field">
-                <span>Senha (mínimo 6 caracteres)</span>
+                <span>Senha</span>
                 <input
                   type="password"
-                  placeholder="Escolha uma senha"
+                  placeholder="Mínimo 6 caracteres"
                   value={registerPassword}
                   onChange={(e) => setRegisterPassword(e.target.value)}
                   required
@@ -240,27 +206,20 @@ export default function UserAuth() {
               </div>
 
               <div className="field">
-                <span>Código de Acesso (opcional)</span>
+                <span>Código de Organizador (Opcional)</span>
                 <input
                   type="password"
-                  placeholder="Se você é administrador, insira o código"
+                  placeholder="Caso você organize eventos"
                   value={registerAdminCode}
                   onChange={(e) => setRegisterAdminCode(e.target.value)}
                 />
-                <small style={{ color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                  Deixe em branco se você é um convidado regular
-                </small>
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn primary large full-width"
-              >
+              <button type="submit" className="btn primary large full-width" disabled={loading}>
                 {loading ? "Criando conta..." : "Criar Conta"}
               </button>
 
-              <div style={{ textAlign: 'center', fontSize: '14px', color: 'var(--text-muted)' }}>
+              <div className="auth-footer">
                 Já tem conta?{" "}
                 <button
                   type="button"
@@ -268,16 +227,9 @@ export default function UserAuth() {
                     setMode("login");
                     setError(null);
                   }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--primary)',
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                    fontSize: 'inherit',
-                  }}
+                  className="link-btn"
                 >
-                  Entrar
+                  Fazer login
                 </button>
               </div>
             </form>

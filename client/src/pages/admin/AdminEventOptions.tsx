@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiDelete, apiGet, apiPatch, apiPost } from "../../api";
+import Header from "../../components/Header";
 
 type OptionRow = {
   id: string;
@@ -81,112 +82,103 @@ export default function AdminEventOptions() {
 
   return (
     <>
-      <header className="admin-topbar">
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-          <Link className="brand" to="/admin">Painel</Link>
-          <nav className="nav">
-            <Link to="/admin">Eventos</Link>
-            <Link to={`/admin/events/${eventId}/stats`}>Estatísticas</Link>
-          </nav>
-        </div>
-      </header>
+      <Header title="Opções do Evento" />
 
-      <div className="container">
+      <div className="container fade-in" style={{ paddingTop: '100px', paddingBottom: '100px' }}>
         <main className="stack">
-          <section style={{ textAlign: 'center', paddingTop: '16px' }}>
-            <h1 style={{ fontSize: '40px' }}>Opções de Consumo</h1>
-            <p className="muted" style={{ marginTop: '4px' }}>Gerencie o que será oferecido no seu evento.</p>
+          <section className="stack tight stagger-1" style={{ marginBottom: '24px' }}>
+            <div className="row between" style={{ alignItems: 'flex-start' }}>
+              <div>
+                <h1 className="hero-title" style={{ fontSize: 'clamp(2rem, 5vw, 40px)', textAlign: 'left', margin: 0 }}>
+                  Opções de <span className="gradient-text">Consumo</span>
+                </h1>
+                <p className="hero-subtitle" style={{ textAlign: 'left', fontSize: '18px', margin: 0 }}>
+                  Gerencie o que será oferecido no seu evento.
+                </p>
+              </div>
+              <div className="row" style={{ gap: '12px' }}>
+                <Link to={`/admin/events/${eventId}/stats`} className="btn small" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>Estatísticas</Link>
+                <Link to="/admin" className="btn small" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>Painel</Link>
+              </div>
+            </div>
           </section>
 
           {error && (
-            <div style={{
-              padding: '14px 20px',
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--error-bg)',
-              border: '1px solid var(--error)',
-              color: 'var(--error)',
-              fontSize: '15px',
-              textAlign: 'center'
-            }}>
+            <div className="login-error stagger-2">
               {error}
             </div>
           )}
 
-          <div className="form-card" style={{ maxWidth: '600px' }}>
-            <div className="stack tight" style={{ padding: 0 }}>
-              <h3>Adicionar Nova Opção</h3>
-              <div className="row" style={{ gap: '8px' }}>
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex: Gin Tônica, Cerveja, Água..."
-                  onKeyDown={(e) => e.key === 'Enter' && add()}
-                  style={{ flex: 1 }}
-                />
-                <button className="btn primary" onClick={add} disabled={loading || !name.trim()}>
-                  {loading ? "..." : "Adicionar"}
-                </button>
-              </div>
-
-              <div style={{ marginTop: '28px' }}>
-                <div className="row between" style={{ marginBottom: '16px' }}>
-                  <h3 style={{ margin: 0 }}>Lista de Opções</h3>
-                  <span className="muted small" style={{ fontWeight: 500 }}>{drinks.length} itens</span>
+          <div className="card stagger-3" style={{ maxWidth: '600px', margin: '0 auto', width: '100%' }}>
+            <div className="card-content">
+              <div className="auth-form" style={{ gap: '24px' }}>
+                <div className="field">
+                  <span>Adicionar Nova Opção</span>
+                  <div className="row" style={{ gap: '8px' }}>
+                    <input
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Ex: Gin Tônica, Cerveja, Água..."
+                      onKeyDown={(e) => e.key === 'Enter' && add()}
+                      style={{ flex: 1 }}
+                    />
+                    <button className="btn primary" onClick={add} disabled={loading || !name.trim()}>
+                      {loading ? "..." : "Adicionar"}
+                    </button>
+                  </div>
                 </div>
 
-                <div className="stack tight" style={{ padding: 0, gap: '6px' }}>
-                  {drinks.length === 0 ? (
-                    <div className="empty-state" style={{ padding: '40px' }}>
-                      <p className="muted small">Nenhuma opção cadastrada ainda.</p>
-                    </div>
-                  ) : (
-                    drinks.map((o) => (
-                      <div key={o.id} className="option-row">
-                        <div style={{ flex: 1 }}>
-                          <input
-                            style={{ background: 'transparent', border: 'none', padding: 0, fontSize: '16px', fontWeight: 500 }}
-                            defaultValue={o.name}
-                            onBlur={(e) => {
-                              const v = e.target.value.trim();
-                              if (v && v !== o.name) rename(o, v);
-                            }}
-                          />
-                        </div>
-                        <div className="row" style={{ gap: '6px' }}>
-                          <button
-                            className="btn small"
-                            style={{
-                              fontSize: '12px',
-                              padding: '4px 10px',
-                              background: o.is_available ? 'rgba(0, 113, 227, 0.08)' : 'var(--bg-alt)',
-                              color: o.is_available ? 'var(--primary)' : 'var(--text-muted)',
-                              border: 'none',
-                              borderRadius: '980px',
-                              fontWeight: 600,
-                              cursor: 'pointer'
-                            }}
-                            onClick={() => toggle(o)}
-                          >
-                            {o.is_available ? "Ativo" : "Inativo"}
-                          </button>
-                          <button
-                            className="btn ghost small"
-                            style={{ fontSize: '12px', padding: '4px 10px', color: 'var(--error)' }}
-                            onClick={() => remove(o)}
-                          >
-                            Remover
-                          </button>
-                        </div>
+                <div style={{ marginTop: '8px' }}>
+                  <div className="row between" style={{ marginBottom: '16px' }}>
+                    <h3 style={{ fontSize: '16px', margin: 0 }}>Lista de Opções</h3>
+                    <span className="muted small" style={{ fontWeight: 600 }}>{drinks.length} itens</span>
+                  </div>
+
+                  <div className="stack tight" style={{ padding: 0, gap: '12px' }}>
+                    {drinks.length === 0 ? (
+                      <div className="empty-state" style={{ padding: '32px' }}>
+                        <p className="muted small">Nenhuma opção cadastrada ainda.</p>
                       </div>
-                    ))
-                  )}
+                    ) : (
+                      drinks.map((o) => (
+                        <div key={o.id} className="card" style={{ padding: '12px 16px', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
+                          <div className="row between">
+                            <input
+                              style={{ background: 'transparent', border: 'none', padding: 0, fontSize: '15px', fontWeight: 600, color: 'var(--text)', flex: 1 }}
+                              defaultValue={o.name}
+                              onBlur={(e) => {
+                                const v = e.target.value.trim();
+                                if (v && v !== o.name) rename(o, v);
+                              }}
+                            />
+                            <div className="row" style={{ gap: '12px' }}>
+                              <button
+                                className={`status-badge ${o.is_available ? 'published' : 'draft'}`}
+                                style={{ border: 'none', cursor: 'pointer', fontSize: '11px', padding: '4px 10px' }}
+                                onClick={() => toggle(o)}
+                              >
+                                {o.is_available ? "Ativo" : "Inativo"}
+                              </button>
+                              <button
+                                className="link-btn"
+                                style={{ color: 'var(--error)', fontSize: '13px' }}
+                                onClick={() => remove(o)}
+                              >
+                                Remover
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div style={{ marginTop: '28px' }}>
-                <Link className="btn primary full-width" to={`/admin/events/${eventId}/stats`}>
-                  Ver Estatísticas
-                </Link>
+                <div style={{ marginTop: '8px' }}>
+                  <Link className="btn primary large full-width" to={`/admin/events/${eventId}/stats`}>
+                    Ver Estatísticas
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

@@ -36,6 +36,30 @@ export default function AdminEventForm() {
 
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
+
+  function handleTitleChange(val: string) {
+    setTitle(val);
+    if (!editing) {
+      // Gera slug automático: remove acentos, espaços vira -, remove caracteres especiais
+      const generated = val
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .trim();
+      setSlug(generated);
+    }
+  }
+
+  function handleSlugChange(val: string) {
+    const sanitized = val
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
+    setSlug(sanitized);
+  }
   const [description, setDescription] = useState("");
   const [dateTime, setDateTime] = useState("");
   const [location, setLocation] = useState("");
@@ -119,7 +143,11 @@ export default function AdminEventForm() {
       } else {
         const r = await apiPost<{ id: string }>(`/admin/events`, payload);
         console.log("Create response:", r);
-        navigate(`/admin/events/${r.id}/options`);
+        if (r && r.id) {
+          navigate(`/admin/events/${r.id}/options`);
+        } else {
+          throw new Error("Resposta do servidor inválida ao criar evento");
+        }
       }
     } catch (e: any) {
       console.error("Error saving event:", e);
@@ -131,10 +159,10 @@ export default function AdminEventForm() {
 
   return (
     <>
-      <Header />
-      <div className="container" style={{ paddingTop: '100px', paddingBottom: '100px' }}>
+      <Header title={id ? "Editar Evento" : "Novo Evento"} />
+      <div className="container fade-in" style={{ paddingTop: '100px', paddingBottom: '100px' }}>
         <main className="stack">
-          <section className="stack tight" style={{ marginBottom: '24px' }}>
+          <section className="stack tight stagger-1" style={{ marginBottom: '24px' }}>
             <div className="row between" style={{ alignItems: 'flex-start' }}>
               <div>
                 <h1 className="hero-title" style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)', textAlign: 'left', margin: 0 }}>
@@ -144,256 +172,287 @@ export default function AdminEventForm() {
                   Preencha os detalhes para {id ? 'atualizar sua festa' : 'criar uma nova festa'}.
                 </p>
               </div>
-              <Link to="/admin" className="btn secondary small">Voltar ao Painel</Link>
+              <Link to="/admin" className="btn small" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>Voltar ao Painel</Link>
             </div>
           </section>
 
           {error && (
-            <div style={{
-              padding: '14px 20px',
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--error-bg)',
-              border: '1px solid var(--error)',
-              color: 'var(--error)',
-              fontSize: '15px'
-            }}>
+            <div className="login-error stagger-2">
               {error}
             </div>
           )}
 
-          <div className="form-card" style={{ maxWidth: '800px', margin: '0 auto', width: '100%' }}>
-            <div className="stack tight" style={{ padding: 0 }}>
-              <div className="field">
-                <label>Título do Evento</label>
-                <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Aniversário do João" />
-              </div>
-
-              <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+          <div className="card stagger-3" style={{ maxWidth: '800px', margin: '0 auto', width: '100%', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
+            <div className="card-content">
+              <div className="auth-form" style={{ gap: '32px' }}>
                 <div className="field">
-                  <label>Slug (URL amigável)</label>
-                  <input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="aniversario-joao" />
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Título do Evento</label>
+                  <input value={title} onChange={(e) => handleTitleChange(e.target.value)} placeholder="Ex: Aniversário do João" />
                 </div>
-                <div className="field">
-                  <label>Status</label>
-                  <select value={status} onChange={(e) => setStatus(e.target.value as any)}>
-                    <option value="draft">Rascunho</option>
-                    <option value="published">Publicado</option>
-                  </select>
-                </div>
-              </div>
 
-              <div className="field">
-                <label>Descrição</label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Conte mais sobre a festa..." />
-              </div>
+                <div className="grid-2-1" style={{ gap: '24px' }}>
+                  <div className="field">
+                    <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Slug (URL amigável)</label>
+                    <input value={slug} onChange={(e) => handleSlugChange(e.target.value)} placeholder="aniversario-joao" />
+                  </div>
+                  <div className="field">
+                    <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Status</label>
+                    <select value={status} onChange={(e) => setStatus(e.target.value as any)}>
+                      <option value="draft">Rascunho</option>
+                      <option value="published">Publicado</option>
+                    </select>
+                  </div>
+                </div>
 
-              <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                 <div className="field">
-                  <label>Data e Hora</label>
-                  <input type="datetime-local" value={dateTime} onChange={(e) => setDateTime(e.target.value)} />
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Descrição</label>
+                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Conte mais sobre a festa..." style={{ minHeight: '120px' }} />
                 </div>
-                <div className="field">
-                  <label>Local</label>
-                  <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Onde será?" />
-                </div>
-              </div>
 
-              <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                <div className="field">
-                  <label>Capacidade Máxima</label>
-                  <input type="number" value={capacity} onChange={(e) => setCapacity(e.target.value)} placeholder="Opcional" />
+                <div className="cols-2" style={{ gap: '24px' }}>
+                  <div className="field">
+                    <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Data e Hora</label>
+                    <input type="datetime-local" value={dateTime} onChange={(e) => setDateTime(e.target.value)} />
+                  </div>
+                  <div className="field">
+                    <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Local</label>
+                    <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Onde será?" />
+                  </div>
                 </div>
-                <div className="field">
-                  <label>Fim das Inscrições</label>
-                  <input type="datetime-local" value={registrationDeadline} onChange={(e) => setRegistrationDeadline(e.target.value)} />
-                </div>
-              </div>
 
-              <div className="field" style={{ marginTop: '16px' }}>
-                <label>Imagem de Capa</label>
-                <div style={{ 
-                  marginTop: '8px', 
-                  border: '2px dashed var(--border)', 
-                  borderRadius: 'var(--radius-sm)', 
-                  padding: '24px', 
-                  textAlign: 'center',
-                  background: coverImageUrl ? 'transparent' : 'var(--bg-alt)',
-                  position: 'relative'
-                }}>
-                  {coverImageUrl ? (
-                    <div style={{ position: 'relative' }}>
-                      <img src={coverImageUrl} alt="Capa" style={{ width: '100%', borderRadius: 'var(--radius-sm)', maxHeight: '300px', objectFit: 'cover' }} />
-                      <button
-                        className="btn"
-                        style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,0.5)', color: 'white', backdropFilter: 'blur(10px)' }}
-                        onClick={() => setCoverImageUrl("")}
-                      >
-                        Trocar Imagem
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div style={{ fontSize: '32px', marginBottom: '8px' }}>🖼️</div>
-                      <p className="muted small" style={{ marginBottom: '16px' }}>Arraste ou clique para enviar a imagem de capa</p>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        style={{ 
-                          position: 'absolute', 
-                          top: 0, 
-                          left: 0, 
-                          width: '100%', 
-                          height: '100%', 
-                          opacity: 0, 
-                          cursor: 'pointer' 
-                        }}
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          try {
-                            setLoading(true);
-                            const url = await uploadImage(file);
-                            setCoverImageUrl(url);
-                          } catch (err: any) {
-                            setError(String(err?.message ?? err));
-                          } finally {
-                            setLoading(false);
-                            (e.target as HTMLInputElement).value = "";
-                          }
-                        }}
-                      />
-                      <button className="btn primary small">Selecionar Arquivo</button>
-                    </>
-                  )}
+                <div className="cols-2" style={{ gap: '24px' }}>
+                  <div className="field">
+                    <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Capacidade Máxima</label>
+                    <input type="number" value={capacity} onChange={(e) => setCapacity(e.target.value)} placeholder="Opcional" />
+                  </div>
+                  <div className="field">
+                    <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Fim das Inscrições</label>
+                    <input type="datetime-local" value={registrationDeadline} onChange={(e) => setRegistrationDeadline(e.target.value)} />
+                  </div>
                 </div>
-              </div>
 
-              <div className="field" style={{ marginTop: '24px' }}>
-                <label>Galeria de Fotos (até 3)</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginTop: '12px' }}>
-                  {[0, 1, 2].map((idx) => (
-                    <div key={idx} style={{ position: 'relative' }}>
-                      <div style={{
-                        width: '100%',
-                        aspectRatio: '1',
-                        background: 'var(--bg-alt)',
-                        borderRadius: 'var(--radius-sm)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        overflow: 'hidden',
-                        border: '1px solid var(--border)'
-                      }}>
-                        {galleryUrls[idx] ? (
-                          <>
-                            <img src={galleryUrls[idx]} alt={`Galeria ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <button
-                              style={{ 
-                                position: 'absolute', 
-                                top: '8px', 
-                                right: '8px', 
-                                background: 'rgba(0,0,0,0.5)', 
-                                color: 'white', 
-                                border: 'none', 
-                                borderRadius: '50%', 
-                                width: '24px', 
-                                height: '24px', 
-                                cursor: 'pointer',
-                                backdropFilter: 'blur(4px)'
-                              }}
-                              onClick={() => {
-                                const newUrls = [...galleryUrls];
-                                newUrls[idx] = "";
-                                setGalleryUrls(newUrls);
-                              }}
-                            >
-                              ×
-                            </button>
-                          </>
-                        ) : (
-                          <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '20px', marginBottom: '4px' }}>📷</div>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              style={{ 
-                                position: 'absolute', 
-                                top: 0, 
-                                left: 0, 
-                                width: '100%', 
-                                height: '100%', 
-                                opacity: 0, 
-                                cursor: 'pointer' 
-                              }}
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                try {
-                                  setLoading(true);
-                                  const url = await uploadImage(file);
-                                  const newUrls = [...galleryUrls];
-                                  newUrls[idx] = url;
-                                  setGalleryUrls(newUrls);
-                                } catch (err: any) {
-                                  setError(String(err?.message ?? err));
-                                } finally {
-                                  setLoading(false);
-                                  (e.target as HTMLInputElement).value = "";
-                                }
-                              }}
-                            />
-                          </div>
-                        )}
+                <div className="field">
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '12px', display: 'block' }}>Imagem de Capa</label>
+                  <div style={{ 
+                    border: '2px dashed var(--glass-border)', 
+                    borderRadius: '16px', 
+                    padding: coverImageUrl ? '8px' : '48px', 
+                    textAlign: 'center',
+                    background: coverImageUrl ? 'var(--bg-subtle)' : 'var(--glass-bg)',
+                    position: 'relative',
+                    transition: 'all 0.2s ease',
+                    overflow: 'hidden'
+                  }}>
+                    {coverImageUrl ? (
+                      <div style={{ position: 'relative', lineHeight: 0 }}>
+                        <img src={coverImageUrl} alt="Capa" style={{ width: '100%', borderRadius: '12px', maxHeight: '400px', objectFit: 'cover' }} />
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.2)', opacity: 0, transition: 'opacity 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px' }} className="image-hover-overlay">
+                           <button
+                            className="btn small"
+                            style={{ background: 'white', color: 'black', border: 'none', fontWeight: 700 }}
+                            onClick={() => setCoverImageUrl("")}
+                          >
+                            Remover
+                          </button>
+                        </div>
+                        <button
+                          className="btn small"
+                          style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,0.5)', color: 'white', backdropFilter: 'blur(10px)', border: 'none', fontSize: '11px' }}
+                          onClick={() => setCoverImageUrl("")}
+                        >
+                          Trocar Imagem
+                        </button>
                       </div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: '40px', marginBottom: '12px' }}>🖼️</div>
+                        <p style={{ fontSize: '15px', fontWeight: 600, marginBottom: '8px' }}>Upload de Capa</p>
+                        <p className="muted small" style={{ marginBottom: '24px' }}>PNG, JPG até 5MB</p>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ 
+                            position: 'absolute', 
+                            top: 0, 
+                            left: 0, 
+                            width: '100%', 
+                            height: '100%', 
+                            opacity: 0, 
+                            cursor: 'pointer' 
+                          }}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            try {
+                              setLoading(true);
+                              const url = await uploadImage(file);
+                              setCoverImageUrl(url);
+                            } catch (err: any) {
+                              setError(String(err?.message ?? err));
+                            } finally {
+                              setLoading(false);
+                              (e.target as HTMLInputElement).value = "";
+                            }
+                          }}
+                        />
+                        <button className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', fontSize: '13px' }}>Selecionar Arquivo</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '12px', display: 'block' }}>Galeria de Fotos (até 3)</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                    {[0, 1, 2].map((idx) => (
+                      <div key={idx} style={{ position: 'relative' }}>
+                        <div style={{
+                          width: '100%',
+                          aspectRatio: '1',
+                          background: 'var(--glass-bg)',
+                          borderRadius: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          overflow: 'hidden',
+                          border: '1px solid var(--glass-border)',
+                          transition: 'all 0.2s ease'
+                        }}>
+                          {galleryUrls[idx] ? (
+                            <>
+                              <img src={galleryUrls[idx]} alt={`Galeria ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              <button
+                                style={{ 
+                                  position: 'absolute', 
+                                  top: '8px', 
+                                  right: '8px', 
+                                  background: 'rgba(0,0,0,0.6)', 
+                                  color: 'white', 
+                                  border: 'none', 
+                                  borderRadius: '50%', 
+                                  width: '24px', 
+                                  height: '24px', 
+                                  cursor: 'pointer',
+                                  backdropFilter: 'blur(4px)',
+                                  fontSize: '16px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                                onClick={() => {
+                                  const newUrls = [...galleryUrls];
+                                  newUrls[idx] = "";
+                                  setGalleryUrls(newUrls);
+                                }}
+                              >
+                                ×
+                              </button>
+                            </>
+                          ) : (
+                            <div style={{ textAlign: 'center', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                              <div style={{ fontSize: '24px', marginBottom: '4px' }}>📷</div>
+                              <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Adicionar</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                style={{ 
+                                  position: 'absolute', 
+                                  top: 0, 
+                                  left: 0, 
+                                  width: '100%', 
+                                  height: '100%', 
+                                  opacity: 0, 
+                                  cursor: 'pointer' 
+                                }}
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  try {
+                                    setLoading(true);
+                                    const url = await uploadImage(file);
+                                    const newUrls = [...galleryUrls];
+                                    newUrls[idx] = url;
+                                    setGalleryUrls(newUrls);
+                                  } catch (err: any) {
+                                    setError(String(err?.message ?? err));
+                                  } finally {
+                                    setLoading(false);
+                                    (e.target as HTMLInputElement).value = "";
+                                  }
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {!editing && (
+                  <div style={{ 
+                    padding: '20px', 
+                    background: 'var(--glass-bg)', 
+                    borderRadius: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    border: '1px solid var(--glass-border)',
+                    cursor: 'pointer'
+                  }} onClick={() => setCreateDefaultDrinks(!createDefaultDrinks)}>
+                    <div style={{
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '6px',
+                      border: `2px solid ${createDefaultDrinks ? 'var(--primary)' : 'var(--glass-border)'}`,
+                      background: createDefaultDrinks ? 'var(--primary)' : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      transition: 'all 0.2s ease'
+                    }}>
+                      {createDefaultDrinks && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
                     </div>
-                  ))}
-                </div>
-              </div>
+                    <div>
+                      <label style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', cursor: 'pointer', margin: 0 }}>
+                        Criar lista de bebidas padrão
+                      </label>
+                      <p style={{ fontSize: '12px', margin: '2px 0 0 0', opacity: 0.6 }}>Cerveja, Gin, Vodka, Refrigerante, etc.</p>
+                    </div>
+                  </div>
+                )}
 
-              {!editing && (
-                <div style={{ 
-                  marginTop: '24px', 
-                  padding: '16px', 
-                  background: 'rgba(0, 113, 227, 0.05)', 
-                  borderRadius: 'var(--radius-sm)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px'
-                }}>
-                  <input 
-                    type="checkbox" 
-                    id="default-drinks" 
-                    checked={createDefaultDrinks} 
-                    onChange={(e) => setCreateDefaultDrinks(e.target.checked)}
+                <div className="row" style={{ marginTop: '16px', gap: '16px' }}>
+                  <button 
+                    className="btn primary" 
+                    style={{ flex: 1, height: '52px', fontSize: '16px' }}
+                    onClick={save}
+                    disabled={loading || !canSave}
+                  >
+                    {loading ? "Salvando..." : (id ? "Atualizar Evento" : "Criar Evento")}
+                  </button>
+                  <Link 
+                    to="/admin" 
+                    className="btn" 
                     style={{ 
-                      width: '20px', 
-                      height: '20px',
-                      accentColor: 'var(--primary)',
-                      cursor: 'pointer'
+                      flex: 1, 
+                      height: '52px', 
+                      fontSize: '16px',
+                      background: 'var(--glass-bg)',
+                      border: '1px solid var(--glass-border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
                     }}
-                  />
-                  <label htmlFor="default-drinks" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--primary)', margin: 0 }}>
-                    Criar lista de bebidas padrão automaticamente
-                  </label>
+                  >
+                    Cancelar
+                  </Link>
                 </div>
-              )}
-
-              <div style={{ marginTop: '40px', display: 'flex', gap: '16px' }}>
-                <button 
-                  className="btn primary-glow large" 
-                  style={{ flex: 1, height: '56px', fontSize: '16px' }} 
-                  disabled={!canSave || loading} 
-                  onClick={save}
-                >
-                  {loading ? "Salvando..." : (editing ? "Salvar Alterações" : "Criar e Continuar")}
-                </button>
-                <button 
-                  className="btn large" 
-                  style={{ flex: 1, height: '56px', fontSize: '16px', background: 'var(--bg-alt)' }} 
-                  onClick={() => navigate("/admin")}
-                >
-                  Cancelar
-                </button>
               </div>
             </div>
           </div>

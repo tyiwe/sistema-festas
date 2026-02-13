@@ -23,16 +23,16 @@ export default function AdminLogin({ onLoggedIn }: { onLoggedIn: () => void }) {
   }
 
   return (
-    <div className="login-wrapper">
-      <div className="login-card">
-        <div className="login-header">
-          <Link className="brand" to="/" style={{ fontSize: '28px' }}>
+    <div className="login-wrapper fade-in">
+      <div className="login-card stagger-1">
+        <div className="login-header stagger-2">
+          <Link className="brand" to="/">
             Festas
           </Link>
           <p>Acesse o painel de controle</p>
         </div>
 
-        <div className="stack tight" style={{ padding: 0 }}>
+        <div className="auth-form stagger-3">
           {err && <div className="login-error">{err}</div>}
 
           <div className="field">
@@ -48,26 +48,18 @@ export default function AdminLogin({ onLoggedIn }: { onLoggedIn: () => void }) {
           </div>
 
           <button
-            className="btn primary-glow full-width"
-            style={{ marginTop: '8px', width: '100%' }}
+            className="btn primary large full-width"
             onClick={submit}
             disabled={loading || !password}
           >
             {loading ? "Entrando..." : "Entrar"}
           </button>
 
-          <Link
-            to="/"
-            className="muted small"
-            style={{
-              display: 'block',
-              textAlign: 'center',
-              marginTop: '16px',
-              textDecoration: 'none'
-            }}
-          >
-            Voltar para o site
-          </Link>
+          <div className="auth-footer">
+            <Link to="/" className="link-btn">
+              Voltar para o site
+            </Link>
+          </div>
         </div>
       </div>
     </div>

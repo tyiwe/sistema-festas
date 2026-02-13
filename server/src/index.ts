@@ -676,32 +676,31 @@ app.listen(port, "0.0.0.0", () => {
   console.log(`[server] running on http://0.0.0.0:${port}`);
 
   // Keep-Alive: Ciclo de pings sequenciais (8, 10, 12 min) com segundos aleatórios
-  // Usamos localhost para o ping interno ser mais confiável e não depender de DNS externo
-  const portForPing = env.PORT || 3001;
-  const INTERNAL_URL = `http://localhost:${portForPing}`;
+  // IMPORTANTE: Para o Render não hibernar, o ping DEVE ser na URL externa (DNS)
+  const EXTERNAL_URL = "https://sistema-festas-backend.onrender.com";
   
   const intervals = [8, 10, 12]; // Minutos
   let currentStep = 0;
 
   const keepAlive = () => {
     const baseMinutes = intervals[currentStep];
-    const randomSeconds = Math.floor(Math.random() * 60); // Segundos aleatórios
+    const randomSeconds = Math.floor(Math.random() * 60);
     const ms = (baseMinutes * 60 + randomSeconds) * 1000;
     
-    console.log(`[Keep-Alive] Agendado para daqui a ${baseMinutes}min ${randomSeconds}s (Passo ${currentStep + 1}/3)`);
+    console.log(`[Keep-Alive] Próximo ping externo em ${baseMinutes}min ${randomSeconds}s...`);
 
     setTimeout(async () => {
       try {
         const endpoint = "/api/health";
-        // Tenta ping interno (localhost) que é infalível se o servidor estiver de pé
-        const res = await fetch(`${INTERNAL_URL}${endpoint}`);
+        // O fetch na URL externa garante que o tráfego passe pelo roteador do Render e zere o timer de 15min
+        const res = await fetch(`${EXTERNAL_URL}${endpoint}`);
         if (res.ok) {
-          console.log(`[Keep-Alive] Ping interno OK (${baseMinutes}:${randomSeconds.toString().padStart(2, '0')})`);
+          console.log(`[Keep-Alive] Ping externo OK: ${baseMinutes}m${randomSeconds}s`);
         } else {
-          console.warn(`[Keep-Alive] Ping interno retornou status ${res.status}`);
+          console.warn(`[Keep-Alive] Ping externo retornou status ${res.status}`);
         }
       } catch (err) {
-        console.warn(`[Keep-Alive] Falha crítica no auto-ping interno:`, err);
+        console.warn(`[Keep-Alive] Erro ao tentar ping externo:`, err);
       }
       
       currentStep = (currentStep + 1) % intervals.length;
@@ -709,6 +708,6 @@ app.listen(port, "0.0.0.0", () => {
     }, ms);
   };
   
-  // Inicia o ciclo de keep-alive
+  // Inicia o ciclo
   keepAlive();
 });

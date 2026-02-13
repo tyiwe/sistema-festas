@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "../../api";
 
+import Header from "../../components/Header";
+
 type EventRow = {
   id: string;
   title: string;
@@ -89,6 +91,7 @@ export default function AdminEventForm() {
   }
 
   async function save() {
+    console.log("Saving event, editing:", editing, "id:", id);
     setError(null);
     setLoading(true);
     try {
@@ -105,16 +108,21 @@ export default function AdminEventForm() {
         gallery_image_urls: galleryUrls.map((u) => u.trim()).filter(Boolean),
       };
 
+      console.log("Payload to save:", JSON.stringify(payload));
+
       if (!editing) payload.create_default_drinks = createDefaultDrinks;
 
       if (editing) {
-        await apiPut(`/admin/events/${id}`, payload);
+        const res = await apiPut(`/admin/events/${id}`, payload);
+        console.log("Update response:", res);
         navigate("/admin");
       } else {
         const r = await apiPost<{ id: string }>(`/admin/events`, payload);
+        console.log("Create response:", r);
         navigate(`/admin/events/${r.id}/options`);
       }
     } catch (e: any) {
+      console.error("Error saving event:", e);
       setError(String(e?.message ?? e));
     } finally {
       setLoading(false);
@@ -123,50 +131,50 @@ export default function AdminEventForm() {
 
   return (
     <>
-      <header className="admin-topbar">
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-          <Link className="brand" to="/admin">Painel</Link>
-          <nav className="nav">
-            <Link to="/admin">Voltar</Link>
-          </nav>
-        </div>
-      </header>
-
-      <div className="container">
+      <Header />
+      <div className="container" style={{ paddingTop: '100px', paddingBottom: '100px' }}>
         <main className="stack">
-          <section style={{ textAlign: 'center', paddingTop: '16px' }}>
-            <h1 style={{ fontSize: '40px' }}>{editing ? "Editar Evento" : "Novo Evento"}</h1>
-            <p className="muted" style={{ marginTop: '4px' }}>Preencha os detalhes da sua festa.</p>
+          <section className="stack tight" style={{ marginBottom: '24px' }}>
+            <div className="row between" style={{ alignItems: 'flex-start' }}>
+              <div>
+                <h1 className="hero-title" style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)', textAlign: 'left', margin: 0 }}>
+                  {id ? 'Editar' : 'Novo'} <span className="gradient-text">Evento</span>
+                </h1>
+                <p className="hero-subtitle" style={{ textAlign: 'left', fontSize: '18px', margin: 0 }}>
+                  Preencha os detalhes para {id ? 'atualizar sua festa' : 'criar uma nova festa'}.
+                </p>
+              </div>
+              <Link to="/admin" className="btn secondary small">Voltar ao Painel</Link>
+            </div>
           </section>
 
           {error && (
             <div style={{
               padding: '14px 20px',
               borderRadius: 'var(--radius-sm)',
-              background: 'rgba(255, 59, 48, 0.06)',
-              border: '1px solid rgba(255, 59, 48, 0.15)',
-              color: '#ff3b30',
-              fontSize: '15px',
-              textAlign: 'center'
+              background: 'var(--error-bg)',
+              border: '1px solid var(--error)',
+              color: 'var(--error)',
+              fontSize: '15px'
             }}>
               {error}
             </div>
           )}
 
-          <div className="form-card" style={{ maxWidth: '760px' }}>
+          <div className="form-card" style={{ maxWidth: '800px', margin: '0 auto', width: '100%' }}>
             <div className="stack tight" style={{ padding: 0 }}>
               <div className="field">
-                <span>Título do Evento</span>
+                <label>Título do Evento</label>
                 <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Aniversário do João" />
               </div>
 
-              <div className="grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+              <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                 <div className="field">
-                  <span>Slug (URL amigável)</span>
+                  <label>Slug (URL amigável)</label>
                   <input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="aniversario-joao" />
                 </div>
                 <div className="field">
-                  <span>Status</span>
+                  <label>Status</label>
                   <select value={status} onChange={(e) => setStatus(e.target.value as any)}>
                     <option value="draft">Rascunho</option>
                     <option value="published">Publicado</option>
@@ -175,108 +183,148 @@ export default function AdminEventForm() {
               </div>
 
               <div className="field">
-                <span>Descrição</span>
+                <label>Descrição</label>
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Conte mais sobre a festa..." />
               </div>
 
-              <div className="grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+              <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                 <div className="field">
-                  <span>Data e Hora</span>
+                  <label>Data e Hora</label>
                   <input type="datetime-local" value={dateTime} onChange={(e) => setDateTime(e.target.value)} />
                 </div>
                 <div className="field">
-                  <span>Local</span>
+                  <label>Local</label>
                   <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Onde será?" />
                 </div>
               </div>
 
-              <div className="grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+              <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                 <div className="field">
-                  <span>Capacidade Máxima</span>
+                  <label>Capacidade Máxima</label>
                   <input type="number" value={capacity} onChange={(e) => setCapacity(e.target.value)} placeholder="Opcional" />
                 </div>
                 <div className="field">
-                  <span>Fim das Inscrições</span>
+                  <label>Fim das Inscrições</label>
                   <input type="datetime-local" value={registrationDeadline} onChange={(e) => setRegistrationDeadline(e.target.value)} />
                 </div>
               </div>
 
-              <div className="field" style={{ marginTop: '8px' }}>
-                <span>Imagem de Capa</span>
-                <div style={{ marginTop: '4px' }}>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    style={{ fontSize: '14px' }}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      try {
-                        setLoading(true);
-                        const url = await uploadImage(file);
-                        setCoverImageUrl(url);
-                      } catch (err: any) {
-                        setError(String(err?.message ?? err));
-                      } finally {
-                        setLoading(false);
-                        (e.target as HTMLInputElement).value = "";
-                      }
-                    }}
-                  />
+              <div className="field" style={{ marginTop: '16px' }}>
+                <label>Imagem de Capa</label>
+                <div style={{ 
+                  marginTop: '8px', 
+                  border: '2px dashed var(--border)', 
+                  borderRadius: 'var(--radius-sm)', 
+                  padding: '24px', 
+                  textAlign: 'center',
+                  background: coverImageUrl ? 'transparent' : 'var(--bg-alt)',
+                  position: 'relative'
+                }}>
+                  {coverImageUrl ? (
+                    <div style={{ position: 'relative' }}>
+                      <img src={coverImageUrl} alt="Capa" style={{ width: '100%', borderRadius: 'var(--radius-sm)', maxHeight: '300px', objectFit: 'cover' }} />
+                      <button
+                        className="btn"
+                        style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,0.5)', color: 'white', backdropFilter: 'blur(10px)' }}
+                        onClick={() => setCoverImageUrl("")}
+                      >
+                        Trocar Imagem
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: '32px', marginBottom: '8px' }}>🖼️</div>
+                      <p className="muted small" style={{ marginBottom: '16px' }}>Arraste ou clique para enviar a imagem de capa</p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ 
+                          position: 'absolute', 
+                          top: 0, 
+                          left: 0, 
+                          width: '100%', 
+                          height: '100%', 
+                          opacity: 0, 
+                          cursor: 'pointer' 
+                        }}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            setLoading(true);
+                            const url = await uploadImage(file);
+                            setCoverImageUrl(url);
+                          } catch (err: any) {
+                            setError(String(err?.message ?? err));
+                          } finally {
+                            setLoading(false);
+                            (e.target as HTMLInputElement).value = "";
+                          }
+                        }}
+                      />
+                      <button className="btn primary small">Selecionar Arquivo</button>
+                    </>
+                  )}
                 </div>
-                {coverImageUrl && (
-                  <div style={{ marginTop: '12px', position: 'relative' }}>
-                    <img src={coverImageUrl} alt="Capa" style={{ width: '100%', borderRadius: 'var(--radius-sm)', maxHeight: '200px', objectFit: 'cover' }} />
-                    <button
-                      className="btn secondary small"
-                      style={{ position: 'absolute', top: '8px', right: '8px' }}
-                      onClick={() => setCoverImageUrl("")}
-                    >
-                      Remover
-                    </button>
-                  </div>
-                )}
               </div>
 
-              <div className="field" style={{ marginTop: '16px' }}>
-                <span>Galeria de Fotos (até 3)</span>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginTop: '8px' }}>
+              <div className="field" style={{ marginTop: '24px' }}>
+                <label>Galeria de Fotos (até 3)</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginTop: '12px' }}>
                   {[0, 1, 2].map((idx) => (
-                    <div key={idx} style={{ textAlign: 'center' }}>
+                    <div key={idx} style={{ position: 'relative' }}>
                       <div style={{
                         width: '100%',
                         aspectRatio: '1',
-                        background: 'var(--bg-secondary)',
+                        background: 'var(--bg-alt)',
                         borderRadius: 'var(--radius-sm)',
-                        overflow: 'hidden',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        border: '1px dashed var(--border)',
-                        position: 'relative'
+                        overflow: 'hidden',
+                        border: '1px solid var(--border)'
                       }}>
                         {galleryUrls[idx] ? (
                           <>
                             <img src={galleryUrls[idx]} alt={`Galeria ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             <button
-                              className="btn secondary small"
-                              style={{ position: 'absolute', top: '4px', right: '4px', padding: '2px 6px', fontSize: '10px' }}
+                              style={{ 
+                                position: 'absolute', 
+                                top: '8px', 
+                                right: '8px', 
+                                background: 'rgba(0,0,0,0.5)', 
+                                color: 'white', 
+                                border: 'none', 
+                                borderRadius: '50%', 
+                                width: '24px', 
+                                height: '24px', 
+                                cursor: 'pointer',
+                                backdropFilter: 'blur(4px)'
+                              }}
                               onClick={() => {
                                 const newUrls = [...galleryUrls];
                                 newUrls[idx] = "";
                                 setGalleryUrls(newUrls);
                               }}
                             >
-                              X
+                              ×
                             </button>
                           </>
                         ) : (
-                          <label style={{ cursor: 'pointer', padding: '10px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                            <span>+ Foto</span>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '20px', marginBottom: '4px' }}>📷</div>
                             <input
                               type="file"
                               accept="image/*"
-                              style={{ display: 'none' }}
+                              style={{ 
+                                position: 'absolute', 
+                                top: 0, 
+                                left: 0, 
+                                width: '100%', 
+                                height: '100%', 
+                                opacity: 0, 
+                                cursor: 'pointer' 
+                              }}
                               onChange={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (!file) return;
@@ -290,10 +338,11 @@ export default function AdminEventForm() {
                                   setError(String(err?.message ?? err));
                                 } finally {
                                   setLoading(false);
+                                  (e.target as HTMLInputElement).value = "";
                                 }
                               }}
                             />
-                          </label>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -302,32 +351,46 @@ export default function AdminEventForm() {
               </div>
 
               {!editing && (
-                <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
-                  <input
-                    type="checkbox"
-                    id="defaultDrinks"
-                    checked={createDefaultDrinks}
+                <div style={{ 
+                  marginTop: '24px', 
+                  padding: '16px', 
+                  background: 'rgba(0, 113, 227, 0.05)', 
+                  borderRadius: 'var(--radius-sm)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <input 
+                    type="checkbox" 
+                    id="default-drinks" 
+                    checked={createDefaultDrinks} 
                     onChange={(e) => setCreateDefaultDrinks(e.target.checked)}
+                    style={{ 
+                      width: '20px', 
+                      height: '20px',
+                      accentColor: 'var(--primary)',
+                      cursor: 'pointer'
+                    }}
                   />
-                  <label htmlFor="defaultDrinks" style={{ fontSize: '14px', cursor: 'pointer' }}>
+                  <label htmlFor="default-drinks" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--primary)', margin: 0 }}>
                     Criar lista de bebidas padrão automaticamente
                   </label>
                 </div>
               )}
 
-              <div style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
-                <button
-                  className="btn primary large"
-                  style={{ flex: 1 }}
-                  disabled={!canSave || loading}
+              <div style={{ marginTop: '40px', display: 'flex', gap: '16px' }}>
+                <button 
+                  className="btn primary-glow large" 
+                  style={{ flex: 1, height: '56px', fontSize: '16px' }} 
+                  disabled={!canSave || loading} 
                   onClick={save}
                 >
-                  {loading ? "Salvando..." : editing ? "Atualizar Evento" : "Criar Evento"}
+                  {loading ? "Salvando..." : (editing ? "Salvar Alterações" : "Criar e Continuar")}
                 </button>
-                <button
-                  className="btn secondary large"
+                <button 
+                  className="btn large" 
+                  style={{ flex: 1, height: '56px', fontSize: '16px', background: 'var(--bg-alt)' }} 
                   onClick={() => navigate("/admin")}
-                  disabled={loading}
                 >
                   Cancelar
                 </button>

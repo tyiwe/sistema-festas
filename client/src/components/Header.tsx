@@ -53,25 +53,29 @@ export default function Header({ showLogout = false, title }: HeaderProps) {
 
   return (
     <header className="topbar">
-      <div className="container" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-        <Link className="brand" to="/">{title || "Festas"}</Link>
-        <nav className="nav" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          {!showLogout && <Link to="/">Eventos</Link>}
+      <div className="container header-container">
+        <Link className="brand" to="/">
+          {title || "Sistema de Festas"}
+        </Link>
+        <nav className="nav">
+          {!showLogout && <Link to="/" className="nav-link">Eventos</Link>}
           
           {!loadingAuth && userLoggedIn && (
             <>
-              <Link to="/my-registrations" style={{ fontSize: '12px', color: 'var(--text)', opacity: 0.8 }}>
-                Minhas Inscrições
+              <Link to="/profile" className="nav-link">
+                Perfil
+              </Link>
+              <Link to="/my-registrations" className="nav-link">
+                Inscrições
               </Link>
               {isAdmin && (
-                <Link to="/admin" className="btn secondary small" style={{ padding: '8px 16px', fontSize: '12px', backgroundColor: '#5856d6', color: 'white' }}>
-                  Painel Admin
+                <Link to="/admin" className="btn primary-glow small">
+                  Admin
                 </Link>
               )}
               <button
-                className="btn ghost small"
+                className="btn small secondary"
                 onClick={handleLogout}
-                style={{ padding: '6px 12px', fontSize: '12px' }}
               >
                 Sair
               </button>
@@ -79,8 +83,8 @@ export default function Header({ showLogout = false, title }: HeaderProps) {
           )}
 
           {!loadingAuth && !userLoggedIn && !showLogout && (
-            <Link to="/user-auth" className="btn primary small" style={{ padding: '8px 16px', fontSize: '12px' }}>
-              Login
+            <Link to="/user-auth" className="btn primary small">
+              Entrar
             </Link>
           )}
         </nav>

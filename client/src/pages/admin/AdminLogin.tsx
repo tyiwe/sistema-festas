@@ -26,7 +26,7 @@ export default function AdminLogin({ onLoggedIn }: { onLoggedIn: () => void }) {
     <div className="login-wrapper">
       <div className="login-card">
         <div className="login-header">
-          <Link className="brand" to="/" style={{ color: '#ffffff', fontSize: '28px' }}>
+          <Link className="brand" to="/" style={{ fontSize: '28px' }}>
             Festas
           </Link>
           <p>Acesse o painel de controle</p>
@@ -48,8 +48,8 @@ export default function AdminLogin({ onLoggedIn }: { onLoggedIn: () => void }) {
           </div>
 
           <button
-            className="btn primary full-width"
-            style={{ marginTop: '8px' }}
+            className="btn primary-glow full-width"
+            style={{ marginTop: '8px', width: '100%' }}
             onClick={submit}
             disabled={loading || !password}
           >
@@ -58,13 +58,12 @@ export default function AdminLogin({ onLoggedIn }: { onLoggedIn: () => void }) {
 
           <Link
             to="/"
+            className="muted small"
             style={{
               display: 'block',
               textAlign: 'center',
               marginTop: '16px',
-              color: 'rgba(255, 255, 255, 0.5)',
-              fontSize: '14px',
-              transition: 'color 0.3s ease'
+              textDecoration: 'none'
             }}
           >
             Voltar para o site

@@ -155,38 +155,43 @@ export default function EventPublic() {
   return (
     <>
       <Header />
-
-      <div className="container">
+      <div className="container" style={{ paddingTop: '100px', paddingBottom: '100px' }}>
         <main className="stack">
-          {/* Event Hero */}
-          <section className="event-hero">
-            <h1>{event.title}</h1>
-            <p className="event-meta">
-              {new Date(event.date_time).toLocaleString('pt-BR', { dateStyle: 'full', timeStyle: 'short' })}
-              {' '}&middot;{' '}{event.location}
-            </p>
-
-            {event.cover_image_url && (
-              <div className="heroMedia">
-                <img src={event.cover_image_url} alt="" />
-              </div>
-            )}
-          </section>
+          <div className="stack tight" style={{ textAlign: 'center', marginBottom: '40px' }}>
+            <h1 className="hero-title" style={{ fontSize: 'clamp(2.5rem, 8vw, 4rem)', marginBottom: '16px' }}>
+              {event.title.split(' ').map((word, i) => i === event.title.split(' ').length - 1 ? <span key={i} className="gradient-text">{word} </span> : word + ' ')}
+            </h1>
+            <div className="row center muted" style={{ gap: '16px', fontSize: '18px', fontWeight: 500 }}>
+              <span className="row" style={{ gap: '6px' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                {event.location}
+              </span>
+              <span>•</span>
+              <span className="row" style={{ gap: '6px' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                {new Date(event.date_time).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
+              </span>
+            </div>
+          </div>
 
           {/* Tabs */}
-          <div className="segmented">
-            <button
-              className={`segItem ${tab === "signup" ? "active" : ""}`}
-              onClick={() => setTab("signup")}
-            >
-              Inscrição
-            </button>
-            <button
-              className={`segItem ${tab === "details" ? "active" : ""}`}
-              onClick={() => setTab("details")}
-            >
-              Detalhes
-            </button>
+          <div className="form-card" style={{ padding: '6px', background: 'var(--bg-alt)', borderRadius: 'var(--radius-sm)', marginBottom: '32px', maxWidth: '400px', margin: '0 auto 32px' }}>
+            <div className="row" style={{ gap: '4px' }}>
+              <button 
+                onClick={() => setTab("details")} 
+                className={`btn ${tab === "details" ? "primary" : "ghost"}`}
+                style={{ flex: 1, borderRadius: '10px', padding: '10px', fontSize: '14px' }}
+              >
+                Detalhes
+              </button>
+              <button 
+                onClick={() => setTab("signup")} 
+                className={`btn ${tab === "signup" ? "primary" : "ghost"}`}
+                style={{ flex: 1, borderRadius: '10px', padding: '10px', fontSize: '14px' }}
+              >
+                Inscrição
+              </button>
+            </div>
           </div>
 
           {/* Error */}
@@ -194,9 +199,9 @@ export default function EventPublic() {
             <div style={{
               padding: '14px 20px',
               borderRadius: 'var(--radius-sm)',
-              background: 'rgba(255, 59, 48, 0.06)',
-              border: '1px solid rgba(255, 59, 48, 0.15)',
-              color: '#ff3b30',
+              background: 'var(--error-bg)',
+              border: '1px solid var(--error)',
+              color: 'var(--error)',
               fontSize: '15px',
               textAlign: 'center'
             }}>

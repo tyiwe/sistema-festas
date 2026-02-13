@@ -206,6 +206,48 @@ router.get("/profile", requireUserLogin, async (req, res) => {
   res.json({ user });
 });
 
+// Atualizar perfil do usuário
+router.put("/profile", requireUserLogin, async (req, res) => {
+  const userId = getUserId(req);
+  const schema = z.object({
+    full_name: z.string().min(3, "Nome deve ter no mínimo 3 caracteres").optional(),
+    phone: z.string().optional(),
+    password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres").optional(),
+  });
+
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "invalid body", details: parsed.error.flatten() });
+    return;
+  }
+
+  const updateData: any = {};
+  if (parsed.data.full_name) updateData.full_name = parsed.data.full_name;
+  if (parsed.data.phone !== undefined) updateData.phone = parsed.data.phone;
+  if (parsed.data.password) {
+    updateData.password_hash = await bcryptjs.hash(parsed.data.password, 10);
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    res.status(400).json({ error: "Nenhum dado para atualizar" });
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("users")
+    .update(updateData)
+    .eq("id", userId)
+    .select("id, email, full_name, phone, is_admin")
+    .single();
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+
+  res.json({ ok: true, user: data });
+});
+
 // Minhas inscrições
 router.get("/my-registrations", requireUserLogin, async (req, res) => {
   const userId = getUserId(req);

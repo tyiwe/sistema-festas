@@ -102,9 +102,9 @@ export default function AdminEventOptions() {
             <div style={{
               padding: '14px 20px',
               borderRadius: 'var(--radius-sm)',
-              background: 'rgba(255, 59, 48, 0.06)',
-              border: '1px solid rgba(255, 59, 48, 0.15)',
-              color: '#ff3b30',
+              background: 'var(--error-bg)',
+              border: '1px solid var(--error)',
+              color: 'var(--error)',
               fontSize: '15px',
               textAlign: 'center'
             }}>
@@ -171,7 +171,7 @@ export default function AdminEventOptions() {
                           </button>
                           <button
                             className="btn ghost small"
-                            style={{ fontSize: '12px', padding: '4px 10px', color: '#ff3b30' }}
+                            style={{ fontSize: '12px', padding: '4px 10px', color: 'var(--error)' }}
                             onClick={() => remove(o)}
                           >
                             Remover

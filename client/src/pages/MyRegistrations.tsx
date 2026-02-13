@@ -81,13 +81,14 @@ export default function MyRegistrations() {
   return (
     <>
       <Header showLogout={true} />
-
-      <div className="container">
+      <div className="container" style={{ paddingTop: '100px', paddingBottom: '100px' }}>
         <main className="stack">
-          <section style={{ textAlign: 'center', paddingTop: '16px' }}>
-            <h1 style={{ fontSize: '40px' }}>Minhas Inscrições</h1>
-            <p className="muted" style={{ marginTop: '4px' }}>
-              {user ? `Bem-vindo, ${user.full_name}!` : "Carregando..."}
+          <section className="stack tight" style={{ marginBottom: '40px' }}>
+            <h1 className="hero-title" style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', textAlign: 'left', margin: 0 }}>
+              Minhas <span className="gradient-text">Inscrições</span>
+            </h1>
+            <p className="hero-subtitle" style={{ textAlign: 'left', fontSize: '18px', margin: 0 }}>
+              {user ? `Olá, ${user.full_name.split(' ')[0]}! Veja onde você já confirmou presença.` : "Veja seus eventos confirmados."}
             </p>
           </section>
 
@@ -95,9 +96,9 @@ export default function MyRegistrations() {
             <div style={{
               padding: '14px 20px',
               borderRadius: 'var(--radius-sm)',
-              background: 'rgba(255, 59, 48, 0.06)',
-              border: '1px solid rgba(255, 59, 48, 0.15)',
-              color: '#ff3b30',
+              background: 'var(--error-bg)',
+              border: '1px solid var(--error)',
+              color: 'var(--error)',
               fontSize: '15px',
               textAlign: 'center'
             }}>
@@ -178,7 +179,7 @@ export default function MyRegistrations() {
                         onClick={() => handleCancel(reg.id)}
                         disabled={cancelingId === reg.id}
                         style={{
-                          color: '#ff3b30',
+                          color: 'var(--error)',
                           cursor: cancelingId === reg.id ? 'not-allowed' : 'pointer',
                           opacity: cancelingId === reg.id ? 0.5 : 1,
                         }}

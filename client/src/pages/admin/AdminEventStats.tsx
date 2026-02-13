@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiGet } from "../../api";
+import Header from "../../components/Header";
 
 type DrinkCount = {
   option_id: string;
@@ -189,124 +190,106 @@ export default function AdminEventStats() {
 
   return (
     <>
-      <header className="topbar">
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-          <Link className="brand" to="/admin">Painel</Link>
-          <nav className="nav" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <Link to="/admin" style={{ fontSize: '12px', color: 'var(--text)', opacity: 0.8 }}>Eventos</Link>
-            <Link to={`/admin/events/${eventId}/options`} style={{ fontSize: '12px', color: 'var(--text)', opacity: 0.8 }}>Bebidas</Link>
-          </nav>
-        </div>
-      </header>
-
-      <div className="container">
+      <Header />
+      <div className="container" style={{ paddingTop: '100px', paddingBottom: '100px' }}>
         <main className="stack">
-          <section style={{ textAlign: 'center', paddingTop: '16px' }}>
-            <h1 style={{ fontSize: '40px' }}>Gerenciamento do Evento</h1>
-            <p className="muted" style={{ marginTop: '4px' }}>Acompanhe as inscrições e preferências dos seus convidados.</p>
+          <section className="stack tight" style={{ marginBottom: '24px' }}>
+            <div className="row between" style={{ alignItems: 'flex-start' }}>
+              <div>
+                <h1 className="hero-title" style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)', textAlign: 'left', margin: 0 }}>
+                  Estatísticas do <span className="gradient-text">Evento</span>
+                </h1>
+                <h2 style={{ fontSize: '20px', fontWeight: 500, opacity: 0.8, marginTop: '4px' }}>
+                  {stats?.event?.title}
+                </h2>
+              </div>
+              <div className="row" style={{ gap: '12px' }}>
+                <Link to={`/admin/edit/${eventId}`} className="btn secondary small">Editar Evento</Link>
+                <Link to="/admin" className="btn secondary small">Voltar</Link>
+              </div>
+            </div>
           </section>
 
-          {error && (
-            <div style={{
-              padding: '14px 20px',
-              borderRadius: 'var(--radius-sm)',
-              background: 'rgba(255, 59, 48, 0.06)',
-              border: '1px solid rgba(255, 59, 48, 0.15)',
-              color: '#ff3b30',
-              fontSize: '15px',
-              textAlign: 'center'
-            }}>
-              {error}
+          <div className="form-card" style={{ padding: '6px', background: 'var(--bg-alt)', borderRadius: 'var(--radius-sm)', marginBottom: '32px' }}>
+            <div className="row" style={{ gap: '4px' }}>
+              <button 
+                onClick={() => setActiveTab("stats")} 
+                className={`btn ${activeTab === "stats" ? "primary" : "ghost"}`}
+                style={{ flex: 1, borderRadius: '10px', padding: '10px', fontSize: '14px' }}
+              >
+                Bebidas
+              </button>
+              <button 
+                onClick={() => setActiveTab("registrations")} 
+                className={`btn ${activeTab === "registrations" ? "primary" : "ghost"}`}
+                style={{ flex: 1, borderRadius: '10px', padding: '10px', fontSize: '14px' }}
+              >
+                Convidados
+              </button>
+              <button 
+                onClick={() => setActiveTab("shopping")} 
+                className={`btn ${activeTab === "shopping" ? "primary" : "ghost"}`}
+                style={{ flex: 1, borderRadius: '10px', padding: '10px', fontSize: '14px' }}
+              >
+                Compras
+              </button>
             </div>
-          )}
-
-          {/* Tab Navigation */}
-          <div className="segmented" style={{ marginBottom: '24px' }}>
-            <button
-              className={`segItem ${activeTab === "stats" ? "active" : ""}`}
-              onClick={() => setActiveTab("stats")}
-            >
-              Estatísticas
-            </button>
-            <button
-              className={`segItem ${activeTab === "registrations" ? "active" : ""}`}
-              onClick={() => setActiveTab("registrations")}
-            >
-              Inscritos ({registrations.length})
-            </button>
-            <button
-              className={`segItem ${activeTab === "shopping" ? "active" : ""}`}
-              onClick={() => setActiveTab("shopping")}
-            >
-              Lista & Financeiro
-            </button>
           </div>
 
-          {!stats || (registrations.length === 0 && activeTab === "registrations") ? (
-            <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                border: '3px solid var(--border)',
-                borderTopColor: 'var(--primary)',
-                borderRadius: '50%',
-                animation: 'spin 0.8s linear infinite',
-                margin: '0 auto 16px'
-              }} />
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-              <p className="muted">Carregando dados...</p>
-            </div>
-          ) : (
-            <div className="stack tight" style={{ padding: 0 }}>
-              {/* STATS TAB */}
-              {activeTab === "stats" && stats && (
-                <>
-                  {/* Stat Cards */}
-                  <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-                    <div className="stat-card">
-                      <div className="stat-label">Total de Inscritos</div>
-                      <div className="stat-value">{stats?.total_registrations ?? 0}</div>
-                    </div>
-                    <div className="stat-card">
-                      <div className="stat-label">Opções Ativas</div>
-                      <div className="stat-value">{(stats?.drink_counts || []).filter(d => d.is_available).length}</div>
-                    </div>
+          {activeTab === "stats" && stats && (
+            <section className="stack tight">
+              <div className="row between">
+                <h2 style={{ fontSize: '24px', fontWeight: 600 }}>Preferências</h2>
+                <button className="btn primary-glow" onClick={shareBilling}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+                  Compartilhar
+                </button>
+              </div>
+              
+              <div className="admin-event-row" style={{ background: 'var(--bg-alt)', border: 'none' }}>
+                <div className="row wrap" style={{ gap: '24px' }}>
+                  <div className="field" style={{ flex: 1, minWidth: '150px' }}>
+                    <label>Airbnb/Casa (R$)</label>
+                    <input type="number" value={houseValue} onChange={(e) => updateHouseValue(e.target.value)} />
                   </div>
+                  <div className="field" style={{ flex: 1, minWidth: '150px' }}>
+                    <label>Outros Custos (R$)</label>
+                    <input type="number" value={fixedCost} onChange={(e) => updateFixedCost(e.target.value)} />
+                  </div>
+                </div>
+              </div>
 
-                  {/* Drink Preferences Chart */}
-                  <div className="form-card" style={{ maxWidth: '100%', marginTop: '12px' }}>
-                    <h3 style={{ marginBottom: '28px' }}>Preferências de Consumo</h3>
-
-                    <div className="stack tight" style={{ padding: 0, gap: '20px' }}>
-                      {(stats?.drink_counts || []).length === 0 ? (
-                        <div className="empty-state" style={{ padding: '40px' }}>
-                          <p className="muted">Nenhum dado de preferência disponível ainda.</p>
+              <div className="stack tight">
+                {stats?.drink_counts.map((d) => (
+                  <div key={d.option_id} className="admin-event-row">
+                    <div className="row between">
+                      <div style={{ flex: 1 }}>
+                        <div className="row" style={{ gap: '8px' }}>
+                          <span style={{ fontSize: '18px', fontWeight: 600 }}>{d.name}</span>
+                          <span className="muted small">{d.count} votos</span>
                         </div>
-                      ) : (
-                        (stats?.drink_counts || []).map((d) => (
-                          <div key={d.option_id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <div className="row between">
-                              <div className="row" style={{ gap: '8px' }}>
-                                <span style={{ fontWeight: 500, fontSize: '15px' }}>{d.name}</span>
-                                {!d.is_available && (
-                                  <span className="status-badge draft" style={{ fontSize: '10px' }}>Inativo</span>
-                                )}
-                              </div>
-                              <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--primary)' }}>{d.count}</span>
-                            </div>
-                            <div className="progress-bar-bg">
-                              <div
-                                className="progress-bar-fill"
-                                style={{ width: `${(d.count / max) * 100}%` }}
-                              />
-                            </div>
-                          </div>
-                        ))
-                      )}
+                        <div style={{ marginTop: '8px', background: 'var(--bg-alt)', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ background: 'var(--primary)', height: '100%', width: `${(d.count / max) * 100}%`, borderRadius: '3px' }} />
+                        </div>
+                        <div className="muted small" style={{ marginTop: '8px' }}>
+                          Estimativa: <strong>{calculateEstimate(d.name, d.count)}</strong>
+                        </div>
+                      </div>
+                      <div className="field" style={{ width: '120px', marginLeft: '32px' }}>
+                        <label>Preço/Unid</label>
+                        <input 
+                          type="number" 
+                          placeholder="R$ 0,00" 
+                          value={prices[d.option_id] || ""} 
+                          onChange={(e) => updatePrice(d.option_id, e.target.value)} 
+                        />
+                      </div>
                     </div>
                   </div>
-                </>
-              )}
+                ))}
+              </div>
+            </section>
+          )}
 
               {/* REGISTRATIONS TAB */}
               {activeTab === "registrations" && (
@@ -391,14 +374,14 @@ export default function AdminEventStats() {
                               key={reg.id}
                               style={{
                                 borderBottom: '1px solid var(--border)',
-                                backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(0, 0, 0, 0.01)',
+                                backgroundColor: idx % 2 === 0 ? 'transparent' : 'var(--bg-alt)',
                                 transition: 'background-color 0.2s ease'
                               }}
                               onMouseEnter={(e) => {
-                                (e.currentTarget as HTMLTableRowElement).style.backgroundColor = 'var(--bg-alt)';
+                                (e.currentTarget as HTMLTableRowElement).style.backgroundColor = 'var(--secondary)';
                               }}
                               onMouseLeave={(e) => {
-                                (e.currentTarget as HTMLTableRowElement).style.backgroundColor = idx % 2 === 0 ? 'transparent' : 'rgba(0, 0, 0, 0.01)';
+                                (e.currentTarget as HTMLTableRowElement).style.backgroundColor = idx % 2 === 0 ? 'transparent' : 'var(--bg-alt)';
                               }}
                             >
                               <td style={{ padding: '16px', fontWeight: 500 }}>{reg.full_name}</td>
@@ -423,10 +406,10 @@ export default function AdminEventStats() {
                                         style={{
                                           padding: '4px 10px',
                                           borderRadius: '6px',
-                                          background: 'rgba(0, 113, 227, 0.1)',
+                                          background: 'var(--secondary)',
                                           color: 'var(--primary)',
                                           fontSize: '12px',
-                                          fontWeight: 500
+                                          fontWeight: 600
                                         }}
                                       >
                                         {sel.name}
@@ -460,20 +443,28 @@ export default function AdminEventStats() {
               {activeTab === "shopping" && stats && (
                 <div className="stack tight" style={{ padding: 0 }}>
                   {/* UNIFIED HEADER WITH TOTAL COST */}
-                  <div className="form-card" style={{ maxWidth: '100%', marginTop: '0', background: 'var(--primary)', color: 'white', border: 'none' }}>
-                    <div className="row between" style={{ alignItems: 'flex-start' }}>
-                      <div style={{ flex: 1 }}>
-                        <h3 style={{ marginBottom: '4px', color: 'white' }}>Resumo do Rolê</h3>
-                        <p style={{ fontSize: '14px', opacity: 0.9, margin: 0 }}>
+                  <div className="card" style={{ 
+                    background: 'linear-gradient(135deg, #0071e3 0%, #409eff 100%)', 
+                    padding: '32px', 
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 'var(--radius)',
+                    marginBottom: '32px',
+                    boxShadow: '0 20px 40px rgba(0, 113, 227, 0.3)'
+                  }}>
+                    <div className="row between wrap" style={{ gap: '24px' }}>
+                      <div style={{ flex: 1, minWidth: '200px' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 8px 0', opacity: 0.9 }}>Finanças do Evento</h3>
+                        <p style={{ fontSize: '14px', opacity: 0.8, margin: 0 }}>
                           {Object.values(checkedItems).filter(Boolean).length} de {(stats?.drink_counts || []).filter(d => d.count > 0).length} itens comprados
                         </p>
-                        <div style={{ marginTop: '16px' }}>
-                          <div style={{ fontSize: '11px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Por Pessoa</div>
-                          <div style={{ fontSize: '24px', fontWeight: 800 }}>
+                        <div style={{ marginTop: '24px' }}>
+                          <div style={{ fontSize: '12px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Por Pessoa</div>
+                          <div style={{ fontSize: '32px', fontWeight: 800 }}>
                             R$ {(calculateTotalFinance() / Math.max(1, stats?.total_registrations || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </div>
                           {Number(stats?.event?.capacity || 0) > (stats?.total_registrations || 0) && (
-                            <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '4px' }}>
+                            <div style={{ fontSize: '13px', opacity: 0.8, marginTop: '8px', background: 'rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: '6px', display: 'inline-block' }}>
                               Se lotar ({Number(stats.event.capacity)} pessoas): 
                               <strong style={{ marginLeft: '4px' }}>
                                 R$ {(calculateTotalFinance() / Number(stats.event.capacity)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -483,28 +474,30 @@ export default function AdminEventStats() {
                         </div>
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: '11px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Geral</div>
-                        <div style={{ fontSize: '24px', fontWeight: 800, marginBottom: '12px' }}>
+                        <div style={{ fontSize: '12px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Total Geral</div>
+                        <div style={{ fontSize: '32px', fontWeight: 800, marginBottom: '24px' }}>
                           R$ {calculateTotalFinance().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </div>
                         <button 
                           onClick={shareBilling}
                           className="btn"
                           style={{ 
-                            background: 'white', 
-                            color: 'var(--primary)', 
-                            fontSize: '12px', 
-                            padding: '8px 12px',
+                            background: 'rgba(255, 255, 255, 0.2)', 
+                            color: '#ffffff', 
+                            fontSize: '14px', 
+                            padding: '10px 20px',
                             fontWeight: 700,
-                            borderRadius: '6px',
-                            border: 'none',
+                            borderRadius: '980px',
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px',
-                            marginLeft: 'auto'
+                            gap: '8px',
+                            marginLeft: 'auto',
+                            backdropFilter: 'blur(10px)'
                           }}
                         >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
                           Cobrar Galera
                         </button>
                       </div>
@@ -586,7 +579,7 @@ export default function AdminEventStats() {
                               onClick={() => toggleChecked(d.option_id)}
                               style={{ 
                                 padding: '16px', 
-                                background: checkedItems[d.option_id] ? 'var(--bg-alt)' : 'white',
+                                background: checkedItems[d.option_id] ? 'var(--bg-alt)' : 'var(--card-bg)',
                                 borderRadius: '12px',
                                 border: '1px solid var(--border)',
                                 cursor: 'pointer',
@@ -600,7 +593,7 @@ export default function AdminEventStats() {
                                   width: '24px',
                                   height: '24px',
                                   borderRadius: '50%',
-                                  border: `2px solid ${checkedItems[d.option_id] ? 'var(--primary)' : '#ccc'}`,
+                                  border: `2px solid ${checkedItems[d.option_id] ? 'var(--primary)' : 'var(--border)'}`,
                                   background: checkedItems[d.option_id] ? 'var(--primary)' : 'transparent',
                                   display: 'flex',
                                   alignItems: 'center',
@@ -677,10 +670,8 @@ export default function AdminEventStats() {
                   </svg>
                 </a>
               </div>
-            </div>
-          )}
-        </main>
-      </div>
-    </>
-  );
-}
+            </main>
+          </div>
+        </>
+      );
+    }

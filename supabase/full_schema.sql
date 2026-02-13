@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS events (
   cover_image_url TEXT,
   -- Galeria (URLs públicas). Pode deixar vazio.
   gallery_image_urls TEXT[] DEFAULT '{}',
-  status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'published')),
+  status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'finished')),
   registration_deadline TIMESTAMPTZ,
   capacity INT,
   created_at TIMESTAMPTZ DEFAULT NOW(),

@@ -104,20 +104,24 @@ export default function UserAuth() {
     <>
       <Header />
 
-      <div className="login-wrapper">
-        <div className="login-card">
-          <div className="login-header">
-            <div className="brand">Festas</div>
-            <p>{mode === "login" ? "Acesse sua conta" : "Crie sua conta"}</p>
+      <div className="login-wrapper" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', paddingTop: '100px' }}>
+        <div className="form-card" style={{ maxWidth: '400px', width: '100%', padding: '40px' }}>
+          <div className="stack tight" style={{ textAlign: 'center', marginBottom: '32px' }}>
+            <h1 className="hero-title" style={{ fontSize: '32px', margin: 0 }}>
+              {mode === "login" ? "Bem-vindo de" : "Crie sua"} <span className="gradient-text">{mode === "login" ? "Volta" : "Conta"}</span>
+            </h1>
+            <p className="muted" style={{ fontSize: '16px' }}>
+              {mode === "login" ? "Entre para gerenciar suas inscrições." : "Cadastre-se para participar dos eventos."}
+            </p>
           </div>
 
           {error && (
             <div className="login-error" style={{
               padding: '12px',
               borderRadius: '8px',
-              background: 'rgba(255, 59, 48, 0.15)',
-              border: '1px solid #ff3b30',
-              color: '#ff3b30',
+              background: 'var(--error-bg)',
+              border: '1px solid var(--error)',
+              color: 'var(--error)',
               fontSize: '14px',
               marginBottom: '16px',
               textAlign: 'center'
@@ -140,7 +144,17 @@ export default function UserAuth() {
               </div>
 
               <div className="field">
-                <span>Senha</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Senha</span>
+                  <a 
+                    href={`https://wa.me/5511991336096?text=${encodeURIComponent(`Olá! Esqueci minha senha do Sistema de Festas e gostaria de recuperá-la. Meu e-mail é: ${loginEmail || "[seu e-mail]"}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: '12px', color: 'var(--primary)', textDecoration: 'none' }}
+                  >
+                    Esqueceu a senha?
+                  </a>
+                </div>
                 <input
                   type="password"
                   placeholder="Sua senha"
@@ -158,7 +172,7 @@ export default function UserAuth() {
                 {loading ? "Entrando..." : "Entrar"}
               </button>
 
-              <div style={{ textAlign: 'center', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <div style={{ textAlign: 'center', fontSize: '14px', color: 'var(--text-muted)' }}>
                 Não tem conta?{" "}
                 <button
                   type="button"
@@ -169,7 +183,7 @@ export default function UserAuth() {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#0071e3',
+                    color: 'var(--primary)',
                     cursor: 'pointer',
                     textDecoration: 'underline',
                     fontSize: 'inherit',
@@ -233,7 +247,7 @@ export default function UserAuth() {
                   value={registerAdminCode}
                   onChange={(e) => setRegisterAdminCode(e.target.value)}
                 />
-                <small style={{ color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px', display: 'block' }}>
+                <small style={{ color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
                   Deixe em branco se você é um convidado regular
                 </small>
               </div>
@@ -243,10 +257,10 @@ export default function UserAuth() {
                 disabled={loading}
                 className="btn primary large full-width"
               >
-                {loading ? "Cadastrando..." : "Cadastrar"}
+                {loading ? "Criando conta..." : "Criar Conta"}
               </button>
 
-              <div style={{ textAlign: 'center', fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)' }}>
+              <div style={{ textAlign: 'center', fontSize: '14px', color: 'var(--text-muted)' }}>
                 Já tem conta?{" "}
                 <button
                   type="button"
@@ -257,13 +271,13 @@ export default function UserAuth() {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#0071e3',
+                    color: 'var(--primary)',
                     cursor: 'pointer',
                     textDecoration: 'underline',
                     fontSize: 'inherit',
                   }}
                 >
-                  Faça login
+                  Entrar
                 </button>
               </div>
             </form>

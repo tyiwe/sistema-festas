@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import multer from "multer";
+import bcryptjs from "bcryptjs";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { env } from "./env.js";
@@ -140,7 +141,8 @@ app.post("/api/auth/logout", (_req, res) => {
 });
 
 // ---------- Helpers ----------
-function toISODateTime(value: string): string {
+function toISODateTime(value: string | null | undefined): string | null {
+  if (!value) return null;
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) throw new Error("Data/hora inválida");
   return d.toISOString();
@@ -313,6 +315,68 @@ app.post("/api/public/events/:slug/register", async (req, res) => {
   res.json({ ok: true, registration_id: reg.id });
 });
 
+// ---------- Admin: Users ----------
+app.get("/api/admin/users", requireAdmin, async (req, res) => {
+  try {
+    const { data: users, error } = await supabase
+      .from("users")
+      .select("id, email, full_name, phone, is_admin, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    res.json({ users });
+  } catch (err: any) {
+    console.error("Erro ao listar usuários:", err);
+    res.status(500).json({ error: "Erro ao carregar lista de usuários" });
+  }
+});
+
+app.post("/api/admin/users/reset-password", requireAdmin, async (req, res) => {
+  const schema = z.object({
+    email: z.string().email("E-mail inválido"),
+    newPassword: z.string().min(6, "A nova senha deve ter pelo menos 6 caracteres"),
+  });
+
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Dados inválidos", details: parsed.error.flatten() });
+    return;
+  }
+
+  const { email, newPassword } = parsed.data;
+
+  try {
+    // 1. Verificar se o usuário existe
+    const { data: user, error: findError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("email", email.toLowerCase())
+      .maybeSingle();
+
+    if (findError) throw findError;
+    if (!user) {
+      res.status(404).json({ error: "Usuário não encontrado com este e-mail" });
+      return;
+    }
+
+    // 2. Gerar novo hash
+    const passwordHash = await bcryptjs.hash(newPassword, 10);
+
+    // 3. Atualizar no banco
+    const { error: updateError } = await supabase
+      .from("users")
+      .update({ password_hash: passwordHash })
+      .eq("id", user.id);
+
+    if (updateError) throw updateError;
+
+    res.json({ ok: true, message: "Senha atualizada com sucesso" });
+  } catch (err: any) {
+    console.error("Erro ao resetar senha:", err);
+    res.status(500).json({ error: "Erro interno ao atualizar senha" });
+  }
+});
+
 // ---------- Admin: Events ----------
 const eventUpsertSchema = z.object({
   title: z.string().min(2),
@@ -320,8 +384,8 @@ const eventUpsertSchema = z.object({
   description: z.string().optional().default(""),
   date_time: z.string().min(1),
   location: z.string().min(2),
-  cover_image_url: z.string().url().optional().nullable(),
-  gallery_image_urls: z.array(z.string().url()).max(3).optional().default([]),
+  cover_image_url: z.string().optional().nullable(),
+  gallery_image_urls: z.array(z.string()).max(3).optional().default([]),
   status: z.enum(["draft", "published"]).optional().default("draft"),
   registration_deadline: z.string().optional().nullable(),
   capacity: z.number().int().positive().optional().nullable(),
@@ -410,8 +474,8 @@ app.post("/api/admin/events", requireAdmin, async (req, res) => {
     .from("events")
     .insert({
       ...eventData,
-      date_time: toISODateTime(eventData.date_time),
-      registration_deadline: eventData.registration_deadline ? toISODateTime(eventData.registration_deadline) : null,
+      date_time: toISODateTime(eventData.date_time)!,
+      registration_deadline: toISODateTime(eventData.registration_deadline),
     })
     .select("id")
     .single();
@@ -436,26 +500,39 @@ app.post("/api/admin/events", requireAdmin, async (req, res) => {
 
 app.put("/api/admin/events/:id", requireAdmin, async (req, res) => {
   const id = String(req.params.id);
-  const parsed = eventUpsertSchema.omit({ create_default_drinks: true }).safeParse(req.body);
+  console.log(`[PUT] /api/admin/events/${id} - Body:`, JSON.stringify(req.body));
+  
+  const parsed = eventUpsertSchema.omit({ create_default_drinks: true }).partial().safeParse(req.body);
   if (!parsed.success) {
+    console.error(`[PUT] Validation failed:`, parsed.error.flatten());
     res.status(400).json({ error: "invalid body", details: parsed.error.flatten() });
     return;
   }
 
+  const updateData: any = { ...parsed.data };
+  
+  if ("date_time" in updateData) {
+    updateData.date_time = toISODateTime(updateData.date_time);
+  }
+  if ("registration_deadline" in updateData) {
+    updateData.registration_deadline = toISODateTime(updateData.registration_deadline);
+  }
+  updateData.updated_at = new Date().toISOString();
+
+  console.log(`[PUT] Updating Supabase with:`, JSON.stringify(updateData));
+
   const { error } = await supabase
     .from("events")
-    .update({
-      ...parsed.data,
-      date_time: toISODateTime(parsed.data.date_time),
-      registration_deadline: parsed.data.registration_deadline ? toISODateTime(parsed.data.registration_deadline) : null,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq("id", id);
 
   if (error) {
+    console.error(`[PUT] Supabase error:`, error.message);
     res.status(500).json({ error: error.message });
     return;
   }
+  
+  console.log(`[PUT] Update successful`);
   res.json({ ok: true });
 });
 

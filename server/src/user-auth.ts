@@ -29,7 +29,9 @@ export function isUserLoggedIn(req: express.Request, res?: express.Response): bo
       res.clearCookie(USER_COOKIE, { 
         path: "/", 
         sameSite: "none", 
-        secure: true 
+        secure: true,
+        // @ts-ignore
+        partitioned: true,
       });
     }
     return false;
@@ -48,7 +50,9 @@ export function getUserId(req: express.Request, res?: express.Response): string 
       res.clearCookie(USER_COOKIE, { 
         path: "/", 
         sameSite: "none", 
-        secure: true 
+        secure: true,
+        // @ts-ignore
+        partitioned: true,
       });
     }
     return null;
@@ -190,7 +194,9 @@ router.post("/logout", (req, res) => {
   res.clearCookie(USER_COOKIE, { 
     path: "/",
     sameSite: "none",
-    secure: true
+    secure: true,
+    // @ts-ignore
+    partitioned: true,
   });
   res.json({ ok: true });
 });

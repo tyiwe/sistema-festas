@@ -141,7 +141,9 @@ app.post("/api/auth/logout", (req, res) => {
   res.clearCookie("sf_user", { 
     path: "/", 
     sameSite: "none", 
-    secure: true 
+    secure: true,
+    // @ts-ignore
+    partitioned: true,
   });
   res.json({ ok: true });
 });

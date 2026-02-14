@@ -215,12 +215,12 @@ export default function Home() {
         {user && myRegistrations.length > 0 && (
           <section className="section" style={{ padding: '80px 0 40px' }}>
             <div className="container">
-              <div className="row between" style={{ marginBottom: '32px', alignItems: 'flex-end' }}>
-                <div>
-                  <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.03em' }}>Seus Próximos <span className="gradient-text">Rolês</span></h2>
-                  <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>Tá tudo certo pra você curtir as próximas festas.</p>
+              <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+                <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.03em' }}>Seus Próximos <span className="gradient-text">Rolês</span></h2>
+                <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>Tá tudo certo pra você curtir as próximas festas.</p>
+                <div style={{ marginTop: '16px' }}>
+                  <Link to="/my-registrations" className="btn secondary small">Ver todos os ingressos</Link>
                 </div>
-                <Link to="/my-registrations" className="btn secondary small">Ver todos os ingressos</Link>
               </div>
               <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
                 {myRegistrations.slice(0, 3).map((reg) => (

@@ -154,8 +154,7 @@ export default function Header({ showLogout = false, title }: HeaderProps) {
                     handleLogout();
                     setIsMenuOpen(false);
                   }}
-                  className="mobile-nav-link logout-btn"
-                  style={{ background: 'none', border: 'none', textAlign: 'left', width: '100%', cursor: 'pointer' }}
+                  className="mobile-nav-link logout"
                 >
                   Sair
                 </button>

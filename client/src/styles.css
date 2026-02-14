@@ -192,32 +192,57 @@
   .bento-grid {
     grid-template-columns: 1fr;
     grid-auto-rows: auto;
-    gap: 12px;
+    gap: 16px;
     margin: 20px 0;
     padding: 0 16px;
   }
   
   .bento-card {
-    padding: 24px;
+    padding: 32px 24px;
     grid-column: span 1 !important;
-    min-height: 120px;
-    justify-content: flex-start;
+    min-height: 200px;
+    height: auto !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    text-align: left;
   }
 
   .bento-card h3 {
-    font-size: 18px;
+    font-size: 24px;
+    margin-bottom: 12px;
+    line-height: 1.2;
   }
 
   .bento-card p {
-    font-size: 14px;
+    font-size: 16px;
+    line-height: 1.5;
+    opacity: 0.8;
   }
 
   .stats-row {
-    gap: 20px !important;
+    gap: 32px !important;
+    padding: 0 20px;
+  }
+
+  .stats-item h2 {
+    font-size: 48px !important;
   }
 
   .stats-divider {
-    height: 40px !important;
+    height: 60px !important;
+    opacity: 0.2;
+  }
+
+  .hero-container {
+    padding: 60px 0 40px !important;
+  }
+
+  .hero-preview {
+    height: auto !important;
+    min-height: 350px !important;
+    margin-top: 40px !important;
   }
 }
 

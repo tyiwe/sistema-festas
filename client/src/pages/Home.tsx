@@ -91,29 +91,37 @@ export default function Home() {
       <main>
         <section className="hero-section fade-in">
           <div className="hero-content stagger-1">
-            <div className="status-badge draft" style={{ marginBottom: '24px', background: 'var(--primary-glow)', color: 'var(--primary)', border: '1px solid var(--primary)', textTransform: 'none', fontWeight: 500 }}>
-              ✨ Nova experiência premium de eventos
+            <div className="hero-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '100px', fontSize: '14px', fontWeight: 600, color: 'var(--primary)', marginBottom: '32px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+              {user ? `👋 E aí, ${user.full_name.split(' ')[0]}!` : '✨ Onde os melhores rolês se encontram'}
             </div>
-            <h1 className="hero-title" style={{ fontSize: 'clamp(40px, 8vw, 72px)', lineHeight: 1.1, letterSpacing: '-0.05em' }}>
-              Sua próxima <span className="gradient-text">festa</span><br />começa aqui.
+            <h1 className="hero-title" style={{ fontSize: 'clamp(32px, 8vw, 72px)', lineHeight: 1.1, letterSpacing: '-0.05em', padding: '0 16px' }}>
+              {user ? (
+                <>Pronto para o seu<br /><span className="gradient-text">próximo rolê?</span></>
+              ) : (
+                <>O rolê que você quer,<br /><span className="gradient-text">no lugar que você confia.</span></>
+              )}
             </h1>
-            <p className="hero-subtitle" style={{ maxWidth: '600px', margin: '24px auto 40px', fontSize: 'clamp(18px, 3vw, 20px)', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-              A plataforma definitiva para descobrir, se inscrever e aproveitar os melhores eventos da região com check-in inteligente e experiência premium.
+            <p className="hero-subtitle" style={{ maxWidth: '600px', margin: '24px auto 40px', fontSize: 'clamp(16px, 3vw, 20px)', color: 'var(--text-muted)', lineHeight: 1.6, padding: '0 24px' }}>
+              {user ? (
+                "Sua lista de eventos está atualizada. Dá uma olhada no que tem de novo ou acesse seus ingressos garantidos."
+              ) : (
+                "Chega de perder tempo procurando. Encontre as festas mais exclusivas, garanta seu lugar em segundos e entre sem fila. O resto é com você."
+              )}
             </p>
-            <div className="hero-btns" style={{ display: 'flex', gap: '16px', justifyContent: 'center', alignItems: 'center' }}>
+            <div className="hero-btns" style={{ display: 'flex', gap: '12px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', padding: '0 16px' }}>
               <button 
                 onClick={() => document.getElementById('eventos')?.scrollIntoView({ behavior: 'smooth' })}
                 className="btn primary large"
-                style={{ padding: '16px 32px', fontSize: '16px' }}
+                style={{ padding: '14px 28px', fontSize: '15px', minWidth: '160px' }}
               >
-                Explorar Eventos
+                Ver Próximas Festas
               </button>
               {user ? (
-                <Link to="/my-registrations" className="btn secondary large" style={{ padding: '16px 32px', fontSize: '16px' }}>
-                  Minhas Inscrições
+                <Link to="/my-registrations" className="btn secondary large" style={{ padding: '14px 28px', fontSize: '15px', minWidth: '160px' }}>
+                  Meus Ingressos
                 </Link>
               ) : (
-                <Link to="/user-auth" className="btn secondary large" style={{ padding: '16px 32px', fontSize: '16px' }}>
+                <Link to="/user-auth" className="btn secondary large" style={{ padding: '14px 28px', fontSize: '15px', minWidth: '160px' }}>
                   Criar Conta
                 </Link>
               )}
@@ -137,30 +145,32 @@ export default function Home() {
               boxShadow: 'var(--card-shadow-hover)',
               overflow: 'hidden'
             }}>
-              <div style={{ 
-                background: 'var(--bg)', 
-                borderRadius: '24px', 
-                height: 'clamp(300px, 50vh, 400px)', 
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                overflow: 'hidden'
-              }}>
+              <div className="hero-preview" style={{ 
+          background: 'var(--bg)', 
+          borderRadius: '24px', 
+          minHeight: 'clamp(350px, 60vh, 450px)', 
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+          marginTop: '60px',
+          width: '100%'
+        }}>
                 <div style={{ textAlign: 'center', zIndex: 2, width: '100%' }}>
                   <div className="stats-row" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '40px' }}>
                     <div className="stack tight">
                       <span style={{ fontSize: 'clamp(32px, 5vw, 48px)', fontWeight: 800, letterSpacing: '-0.02em' }}>
                         {stats.eventCount > 0 ? `+${stats.eventCount}` : stats.eventCount}
                       </span>
-                      <span className="muted small uppercase" style={{ letterSpacing: '0.1em', fontWeight: 600, fontSize: 'clamp(10px, 2vw, 12px)' }}>Eventos Ativos</span>
+                      <span className="muted small uppercase" style={{ letterSpacing: '0.1em', fontWeight: 600, fontSize: 'clamp(10px, 2vw, 12px)' }}>Festas Confirmadas</span>
                     </div>
                     <div className="stats-divider" style={{ width: '1px', height: '60px', background: 'var(--border)' }} />
                     <div className="stack tight">
                       <span style={{ fontSize: 'clamp(32px, 5vw, 48px)', fontWeight: 800, letterSpacing: '-0.02em' }}>
                         {stats.registrationCount >= 1000 ? `${(stats.registrationCount / 1000).toFixed(1)}k` : (stats.registrationCount || 0)}
                       </span>
-                      <span className="muted small uppercase" style={{ letterSpacing: '0.1em', fontWeight: 600, fontSize: 'clamp(10px, 2vw, 12px)' }}>Inscrições</span>
+                      <span className="muted small uppercase" style={{ letterSpacing: '0.1em', fontWeight: 600, fontSize: 'clamp(10px, 2vw, 12px)' }}>Pessoas na Lista</span>
                     </div>
                   </div>
                 </div>
@@ -173,22 +183,22 @@ export default function Home() {
 
         {/* Bento Grid de Destaques */}
         <section className="container fade-in stagger-4">
-          <div className="bento-grid">
-            <div className="bento-card" style={{ gridColumn: 'span 2', background: 'var(--primary-glow)' }}>
-              <h3>Experiências Exclusivas</h3>
-              <p>As melhores festas universitárias e eventos premium da região, com curadoria especial para você.</p>
+          <div className="bento-grid stagger-3" style={{ marginTop: '80px' }}>
+            <div className="bento-card" style={{ gridColumn: 'span 2', background: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+              <h3>Só o que é Top</h3>
+              <p>A gente faz a curadoria de verdade. Só as festas que realmente valem a pena, pra você não cair em furada.</p>
             </div>
-            <div className="bento-card">
-              <h3>Check-in Instantâneo</h3>
-              <p>Esqueça as filas. Com seu QR Code, a entrada é rápida e sem complicações.</p>
+            <div className="bento-card" style={{ background: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+              <h3>Entrou, Curtiu</h3>
+              <p>Nada de filas quilométricas. Mostrou o QR Code no celular, entrou. Simples assim.</p>
             </div>
-            <div className="bento-card">
-              <h3>Open Bar Inteligente</h3>
-              <p>Escolha suas bebidas antecipadamente e aproveite o melhor da festa.</p>
+            <div className="bento-card" style={{ background: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+              <h3>Seu Copo Cheio</h3>
+              <p>Garanta seu consumo antes mesmo de sair de casa e foque no que importa: a diversão.</p>
             </div>
-            <div className="bento-card" style={{ gridColumn: 'span 2', background: 'var(--bg-subtle)' }}>
-              <h3>Segurança e Conforto</h3>
-              <p>Sistema robusto de inscrições e controle de acesso para garantir que sua única preocupação seja se divertir.</p>
+            <div className="bento-card" style={{ gridColumn: 'span 2', background: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+              <h3>Zero Estresse</h3>
+              <p>Tudo seguro, organizado e direto ao ponto. Sua única missão é aproveitar a noite até o fim.</p>
             </div>
           </div>
         </section>
@@ -199,10 +209,10 @@ export default function Home() {
             <div className="container">
               <div className="row between" style={{ marginBottom: '32px', alignItems: 'flex-end' }}>
                 <div>
-                  <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.03em' }}>Seus Próximos <span className="gradient-text">Eventos</span></h2>
-                  <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>Tudo pronto para suas próximas experiências.</p>
+                  <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.03em' }}>Seus Próximos <span className="gradient-text">Rolês</span></h2>
+                  <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>Tá tudo certo pra você curtir as próximas festas.</p>
                 </div>
-                <Link to="/my-registrations" className="btn secondary small">Ver todas as inscrições</Link>
+                <Link to="/my-registrations" className="btn secondary small">Ver todos os ingressos</Link>
               </div>
               <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
                 {myRegistrations.slice(0, 3).map((reg) => (
@@ -216,7 +226,7 @@ export default function Home() {
                         <span>Local: {reg.events.location}</span>
                       </div>
                       <div className="card-footer" style={{ borderTop: 'none', padding: 0 }}>
-                        <button className="btn secondary small full-width">Ver Detalhes</button>
+                        <button className="btn secondary small full-width">Ver o que vai ter</button>
                       </div>
                     </div>
                   </Link>
@@ -240,9 +250,9 @@ export default function Home() {
           >
             <div className="container">
               <div style={{ textAlign: 'center', marginBottom: '64px' }}>
-                <h2 className="section-title">Simples e elegante.</h2>
+                <h2 className="section-title">Sem complicação.</h2>
                 <p className="section-subtitle" style={{ margin: '12px auto 0' }}>
-                  Três passos para garantir sua presença no melhor evento.
+                  Em 3 passos você já está na lista.
                 </p>
               </div>
               
@@ -262,8 +272,8 @@ export default function Home() {
                     color: '#fff',
                     boxShadow: '0 8px 16px var(--primary-glow)'
                   }}>1</div>
-                  <h3 style={{ fontSize: '20px', marginBottom: '12px' }}>Explore</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.6 }}>Descubra eventos exclusivos e escolha sua próxima experiência.</p>
+                  <h3 style={{ fontSize: '20px', marginBottom: '12px' }}>Escolha o Rolê</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.6 }}>Veja o que tá rolando e escolha onde quer estar.</p>
                 </div>
                 <div className="bento-card" style={{ textAlign: 'center', padding: '40px 24px' }}>
                   <div style={{ 
@@ -280,8 +290,8 @@ export default function Home() {
                     color: '#fff',
                     boxShadow: '0 8px 16px var(--primary-glow)'
                   }}>2</div>
-                  <h3 style={{ fontSize: '20px', marginBottom: '12px' }}>Garanta</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.6 }}>Selecione suas preferências e confirme sua presença em segundos.</p>
+                  <h3 style={{ fontSize: '20px', marginBottom: '12px' }}>Garanta a Vaga</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.6 }}>Preencha seus dados rapidinho e confirme sua presença em segundos.</p>
                 </div>
                 <div className="bento-card" style={{ textAlign: 'center', padding: '40px 24px' }}>
                   <div style={{ 
@@ -298,8 +308,8 @@ export default function Home() {
                     color: '#fff',
                     boxShadow: '0 8px 16px var(--primary-glow)'
                   }}>3</div>
-                  <h3 style={{ fontSize: '20px', marginBottom: '12px' }}>Aproveite</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.6 }}>Receba seu QR Code e curta a festa sem se preocupar com filas.</p>
+                  <h3 style={{ fontSize: '20px', marginBottom: '12px' }}>Só Aparecer</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.6 }}>Seu QR Code chega na hora. Mostrou na porta, entrou. Sem estresse.</p>
                 </div>
               </div>
             </div>
@@ -313,9 +323,9 @@ export default function Home() {
           ref={(el) => (sectionsRef.current[1] = el)}
         >
           <div className="container">
-            <h2 className="section-title">{user ? 'Descobrir Novas Festas' : 'Próximos Eventos'}</h2>
+            <h2 className="section-title">{user ? 'O que vem por aí' : 'Próximas Festas'}</h2>
             <p className="section-subtitle">
-              {user ? 'Explore outros eventos que estão por vir e não fique de fora.' : 'Escolha sua próxima experiência e garanta seu lugar.'}
+              {user ? 'Dá uma olhada no que mais tá rolando pra você não ficar de fora.' : 'Escolhe seu próximo destino e garante seu lugar.'}
             </p>
 
             {error && (
@@ -377,8 +387,8 @@ export default function Home() {
             ref={(el) => (sectionsRef.current[2] = el)}
           >
             <div className="container">
-              <h2>Pronto para se inscrever?</h2>
-              <p>Escolha um evento acima e comece agora mesmo!</p>
+              <h2>Bora pro próximo rolê?</h2>
+              <p>Não fica de fora. Escolhe sua festa e garante seu lugar agora.</p>
               <a href="#eventos" className="btn primary-glow large">
                 Explorar Eventos
               </a>

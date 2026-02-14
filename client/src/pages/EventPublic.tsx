@@ -168,7 +168,7 @@ export default function EventPublic() {
               margin: '0 auto 16px'
             }} />
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            <p className="muted" style={{ fontSize: '15px' }}>Carregando evento...</p>
+            <p className="muted" style={{ fontSize: '15px' }}>Buscando os detalhes do rolê...</p>
           </div>
         </div>
       </>
@@ -188,7 +188,7 @@ export default function EventPublic() {
         
         <div className="container">
           <div className="event-hero-content">
-            <div className="status-badge published" style={{ marginBottom: '16px' }}>Evento Confirmado</div>
+            <div className="status-badge published" style={{ marginBottom: '16px' }}>Rolê Confirmado</div>
             <h1 className="hero-title">{event.title}</h1>
             <div className="event-meta-row">
               <span className="meta-item">📅 {new Date(event.date_time).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
@@ -213,7 +213,7 @@ export default function EventPublic() {
             opacity: 0.8,
             fontWeight: 500 
           }} className="stagger-1">
-            ← Voltar para Eventos
+            ← Voltar para a lista
           </Link>
 
           {/* Segmented Control Tabs */}
@@ -222,13 +222,13 @@ export default function EventPublic() {
               className={tab === "signup" ? "active" : ""} 
               onClick={() => setTab("signup")}
             >
-              Inscrição
+              Garantir Vaga
             </button>
             <button 
               className={tab === "details" ? "active" : ""} 
               onClick={() => setTab("details")}
             >
-              Detalhes do Evento
+              O que vai ter?
             </button>
           </div>
 
@@ -248,7 +248,7 @@ export default function EventPublic() {
                   <div className="login-card" style={{ maxWidth: 'none', marginBottom: '24px' }}>
                     <h3 style={{ fontSize: '28px', marginBottom: '20px', fontWeight: 800, letterSpacing: '-0.02em' }}>Sobre o evento</h3>
                     <p style={{ color: 'var(--text-muted)', lineHeight: '1.8', fontSize: '17px', whiteSpace: 'pre-wrap', marginBottom: '32px' }}>
-                      {event.description || "Nenhuma descrição detalhada disponível para este evento."}
+                      {event.description || "O organizador ainda não soltou a descrição completa, mas pode ter certeza que vai ser épico!"}
                     </p>
 
                     <div className="stack" style={{ gap: '16px' }}>
@@ -291,7 +291,7 @@ export default function EventPublic() {
                   ) : (
                     <div className="login-card" style={{ textAlign: 'center', opacity: 0.5, padding: '60px 20px' }}>
                       <div style={{ fontSize: '40px', marginBottom: '16px' }}>📸</div>
-                      <p>Galeria em breve</p>
+                      <p>As fotos estão chegando...</p>
                     </div>
                   )}
                 </div>
@@ -304,7 +304,7 @@ export default function EventPublic() {
                     <div style={{ fontSize: '48px', marginBottom: '24px' }}>🔒</div>
                     <h3 style={{ fontSize: '24px', marginBottom: '12px' }}>Acesso Restrito</h3>
                     <p style={{ color: 'var(--text-muted)', marginBottom: '32px', maxWidth: '400px', margin: '0 auto 32px' }}>
-                      Para garantir a melhor experiência e segurança, você precisa estar logado para se inscrever neste evento.
+                      Pra garantir sua segurança e a organização do rolê, você precisa estar logado para se inscrever.
                     </p>
                     <button className="btn primary large full-width" onClick={() => navigate("/user-auth")}>
                       Entrar ou Criar Conta
@@ -315,10 +315,10 @@ export default function EventPublic() {
                     <div style={{ fontSize: '48px', marginBottom: '24px' }}>✨</div>
                     <h3 style={{ fontSize: '24px', marginBottom: '12px' }}>Presença Confirmada!</h3>
                     <p style={{ color: 'var(--text-muted)', marginBottom: '32px', maxWidth: '400px', margin: '0 auto 32px' }}>
-                      Você já está na lista de convidados para este evento. Prepare o look e aproveite!
+                      Você já está na lista! Agora é só preparar o look e aproveitar a festa.
                     </p>
                     <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-                      <Link to="/my-registrations" className="btn primary">Minhas Inscrições</Link>
+                      <Link to="/my-registrations" className="btn primary">Ver Meu Ingresso</Link>
                       <Link to="/" className="btn secondary">Ver Outros Eventos</Link>
                     </div>
                   </div>
@@ -333,11 +333,11 @@ export default function EventPublic() {
                     {step === 1 && (
                       <div className="auth-form">
                         <div style={{ textAlign: 'center', marginBottom: '12px' }}>
-                          <h3 style={{ fontSize: '22px' }}>Informações de Contato</h3>
+                          <h3 style={{ fontSize: '22px' }}>Só pra gente saber quem vai estar lá</h3>
                           <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Confirme seus dados para a lista oficial.</p>
                         </div>
                         <div className="field">
-                          <span>Nome Completo</span>
+                          <span>Nome Completo (pra lista na porta)</span>
                           <input 
                             value={fullName} 
                             onChange={(e) => setFullName(e.target.value)} 
@@ -357,7 +357,7 @@ export default function EventPublic() {
                           />
                         </div>
                         <div className="field">
-                          <span>Alergias ou Restrições Alimentares</span>
+                          <span>Restrições, alergias... conta pra gente</span>
                           <input 
                             value={allergies} 
                             onChange={(e) => setAllergies(e.target.value)} 
@@ -378,7 +378,7 @@ export default function EventPublic() {
                     {step === 2 && (
                       <div className="auth-form">
                         <div style={{ textAlign: 'center', marginBottom: '12px' }}>
-                          <h3 style={{ fontSize: '22px' }}>Preferências</h3>
+                          <h3 style={{ fontSize: '22px' }}>O que não pode faltar pra você?</h3>
                           <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Personalize sua experiência no evento.</p>
                         </div>
 
@@ -405,7 +405,7 @@ export default function EventPublic() {
                         )}
 
                         <div className="field">
-                          <span>Observações para a Organização</span>
+                          <span>Alguma dúvida ou recado pra organização?</span>
                           <textarea 
                             value={notes} 
                             onChange={(e) => setNotes(e.target.value)} 
@@ -424,9 +424,9 @@ export default function EventPublic() {
                     {step === 3 && (
                       <div style={{ textAlign: 'center', padding: '20px 0' }}>
                         <div style={{ fontSize: '80px', marginBottom: '24px' }}>🥂</div>
-                        <h2 style={{ fontSize: '32px', marginBottom: '16px' }}>Inscrição Realizada!</h2>
+                        <h2 style={{ fontSize: '32px', marginBottom: '16px' }}>Tudo certo!</h2>
                         <p style={{ color: 'var(--text-muted)', marginBottom: '40px', fontSize: '16px', maxWidth: '440px', margin: '0 auto 40px' }}>
-                          Parabéns, sua vaga em <strong>{event.title}</strong> está garantida! Você já pode conferir seu ingresso na área de inscrições.
+                          Parabéns, sua vaga em <strong>{event.title}</strong> está garantida! Agora é só se preparar e aproveitar.
                         </p>
                         <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
                           <Link to="/my-registrations" className="btn primary large">Ver Meu Ingresso</Link>

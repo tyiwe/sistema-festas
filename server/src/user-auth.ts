@@ -129,6 +129,8 @@ router.post("/register", async (req, res) => {
     secure: true,     // Necessário para SameSite: none
     path: "/",
     maxAge: 30 * 24 * 60 * 60 * 1000,
+    // @ts-ignore - partitioned is relatively new but helps with Safari/Chrome cross-site
+    partitioned: true,
   });
 
   res.json({ ok: true, user: { id: newUser.id, email, full_name, is_admin: newUser.is_admin } });
@@ -175,6 +177,8 @@ router.post("/login", async (req, res) => {
     secure: true,     // Necessário para SameSite: none
     path: "/",
     maxAge: 30 * 24 * 60 * 60 * 1000,
+    // @ts-ignore - partitioned is relatively new but helps with Safari/Chrome cross-site
+    partitioned: true,
   });
 
   res.json({ ok: true, user: { id: user.id, email: user.email, full_name: user.full_name, is_admin: user.is_admin } });

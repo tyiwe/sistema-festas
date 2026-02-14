@@ -126,6 +126,8 @@ app.post("/api/auth/login", async (req, res) => {
       secure: true,
       path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
+      // @ts-ignore
+      partitioned: true,
     });
     
     res.json({ ok: true });

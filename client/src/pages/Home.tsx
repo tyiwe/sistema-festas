@@ -35,9 +35,17 @@ export default function Home() {
     apiGet<{ eventCount: number, registrationCount: number }>("/public/stats")
       .then(res => {
         console.log("Stats carregadas:", res);
-        setStats(res);
+        // Fallback: se o backend retornar 0 mas tivermos eventos carregados, usamos o count local
+        setStats({
+          eventCount: res.eventCount || events.length || 0,
+          registrationCount: res.registrationCount || 0
+        });
       })
-      .catch(err => console.error("Erro ao carregar stats:", err));
+      .catch(err => {
+        console.error("Erro ao carregar stats:", err);
+        // Fallback em caso de erro
+        setStats(prev => ({ ...prev, eventCount: events.length }));
+      });
 
     // Verificar autenticação
     apiGet<{ authenticated: boolean }>("/user/me")

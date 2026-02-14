@@ -41,8 +41,10 @@ export default function UserAuth() {
         email: loginEmail,
         password: loginPassword,
       });
-      navigate("/my-registrations");
-      window.location.reload(); // Garante que o Header atualize o estado de admin
+      // Pequeno delay para garantir que o cookie seja processado em dispositivos móveis
+      setTimeout(() => {
+        window.location.href = "/my-registrations";
+      }, 500);
     } catch (err: any) {
       // Mensagem amigável para erro de login
       if (err?.message?.includes("Invalid login credentials") || err?.message?.includes("401")) {
@@ -85,8 +87,10 @@ export default function UserAuth() {
         full_name: registerFullName,
         admin_code: registerAdminCode,
       });
-      navigate("/my-registrations");
-      window.location.reload(); // Garante que o Header atualize o estado de admin
+      // Pequeno delay para garantir que o cookie seja processado em dispositivos móveis
+      setTimeout(() => {
+        window.location.href = "/my-registrations";
+      }, 500);
     } catch (err: any) {
       if (err?.message?.includes("already registered")) {
         setError("Este e-mail já está cadastrado.");

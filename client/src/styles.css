@@ -315,7 +315,7 @@
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   padding: 6px 12px;
-  borderRadius: 100px;
+  border-radius: 100px;
   font-size: 11px;
   font-weight: 700;
   border: 1px solid var(--glass-border);
@@ -1365,7 +1365,7 @@ body {
 }
 
 .field input:focus {
-  /* Usando estilos globais de input */
+  /* Estilos herdados do global */
 }
 
 .login-error {
@@ -1905,7 +1905,7 @@ input::placeholder, textarea::placeholder {
 .auth-footer {
   text-align: center;
   font-size: 14px;
-  marginTop: 12px;
+  margin-top: 12px;
   color: var(--text-muted);
 }
 
@@ -1914,8 +1914,8 @@ input::placeholder, textarea::placeholder {
   border: none;
   color: var(--primary);
   cursor: pointer;
-  fontWeight: 600;
-  fontSize: inherit;
+  font-weight: 600;
+  font-size: inherit;
   padding: 0;
   transition: opacity 0.2s ease;
 }

@@ -16,30 +16,47 @@ function signUserToken(userId: string) {
   return jwt.sign({ userId, role: "user" }, env.JWT_SECRET, { expiresIn: "30d" });
 }
 
-export function isUserLoggedIn(req: express.Request): boolean {
+export function isUserLoggedIn(req: express.Request, res?: express.Response): boolean {
   const token = req.cookies?.[USER_COOKIE];
   if (!token) return false;
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET) as any;
     return !!decoded?.userId;
-  } catch {
+  } catch (err) {
+    // Se o token for inválido ou expirado e tivermos o objeto res, limpamos o cookie
+    if (res) {
+      console.log("[AUTH] Token inválido detectado, limpando cookie sf_user");
+      res.clearCookie(USER_COOKIE, { 
+        path: "/", 
+        sameSite: "none", 
+        secure: true 
+      });
+    }
     return false;
   }
 }
 
-export function getUserId(req: express.Request): string | null {
+export function getUserId(req: express.Request, res?: express.Response): string | null {
   const token = req.cookies?.[USER_COOKIE];
   if (!token) return null;
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET) as any;
     return decoded?.userId || null;
-  } catch {
+  } catch (err) {
+    if (res) {
+      console.log("[AUTH] Token inválido detectado no getUserId, limpando cookie sf_user");
+      res.clearCookie(USER_COOKIE, { 
+        path: "/", 
+        sameSite: "none", 
+        secure: true 
+      });
+    }
     return null;
   }
 }
 
 export function requireUserLogin(req: express.Request, res: express.Response, next: express.NextFunction) {
-  if (!isUserLoggedIn(req)) {
+  if (!isUserLoggedIn(req, res)) {
     res.status(401).json({ error: "unauthorized" });
     return;
   }
@@ -176,7 +193,7 @@ router.post("/logout", (req, res) => {
 
 // Verificar se usuário está logado
 router.get("/me", (req, res) => {
-  const userId = getUserId(req);
+  const userId = getUserId(req, res);
   if (!userId) {
     res.json({ authenticated: false });
     return;
@@ -187,7 +204,7 @@ router.get("/me", (req, res) => {
 
 // Obter dados do usuário logado
 router.get("/profile", requireUserLogin, async (req, res) => {
-  const userId = getUserId(req);
+  const userId = getUserId(req, res);
   if (!userId) {
     res.status(401).json({ error: "unauthorized" });
     return;
@@ -251,7 +268,7 @@ router.put("/profile", requireUserLogin, async (req, res) => {
 
 // Minhas inscrições
 router.get("/my-registrations", requireUserLogin, async (req, res) => {
-  const userId = getUserId(req);
+  const userId = getUserId(req, res);
   if (!userId) {
     res.status(401).json({ error: "unauthorized" });
     return;

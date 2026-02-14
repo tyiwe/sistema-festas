@@ -67,8 +67,8 @@ const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
 });
 
 // FUNÇÃO DE VERIFICAÇÃO DE ADMIN ATUALIZADA
-async function isAdmin(req: express.Request): Promise<boolean> {
-  const userId = getUserId(req);
+async function isAdmin(req: express.Request, res?: express.Response): Promise<boolean> {
+  const userId = getUserId(req, res);
   if (!userId) return false;
   if (userId === "admin") return true;
 
@@ -88,7 +88,7 @@ async function isAdmin(req: express.Request): Promise<boolean> {
 
 // MIDDLEWARE DE ADMIN ATUALIZADO
 async function requireAdmin(req: express.Request, res: express.Response, next: express.NextFunction) {
-  const isAdm = await isAdmin(req);
+  const isAdm = await isAdmin(req, res);
   if (!isAdm) {
     res.status(401).json({ error: "unauthorized" });
     return;
@@ -108,16 +108,15 @@ const DEFAULT_DRINKS = [
 ] as const;
 
 app.get("/api/auth/me", async (req, res) => {
-  const isAdm = await isAdmin(req);
+  const isAdm = await isAdmin(req, res);
   res.json({ authenticated: isAdm });
 });
 
 app.post("/api/auth/login", async (req, res) => {
   const { password } = req.body;
   if (password === env.ADMIN_CODE) {
-    // Para simplificar, vamos criar um token de admin "especial" 
-    // ou apenas usar o sistema de cookies existente se preferir.
-    // Como AdminLogin.tsx espera apenas sucesso, vamos assinar um token.
+    // Limpar qualquer cookie de usuário comum antes de logar como admin
+    res.clearCookie("sf_user", { path: "/", sameSite: "none", secure: true });
     
     const token = jwt.sign({ userId: "admin", role: "admin" }, env.JWT_SECRET, { expiresIn: "7d" });
     
@@ -156,24 +155,34 @@ function toISODateTime(value: string | null | undefined): string | null {
 // ---------- Public ----------
 app.get("/api/public/stats", async (_req, res) => {
   try {
+    console.log("[STATS] Fetching public stats...");
     const { count: eventCount, error: eErr } = await supabase
       .from("events")
       .select("id", { count: "exact", head: true })
-      .is("deleted_at", null);
+      .is("deleted_at", null)
+      .eq("status", "published");
     
-    if (eErr) throw eErr;
+    if (eErr) {
+      console.error("[STATS] Event count error:", eErr);
+      throw eErr;
+    }
 
     const { count: regCount, error: rErr } = await supabase
       .from("registrations")
       .select("id", { count: "exact", head: true });
 
-    if (rErr) throw rErr;
+    if (rErr) {
+      console.error("[STATS] Registration count error:", rErr);
+      throw rErr;
+    }
 
+    console.log(`[STATS] Found ${eventCount} events and ${regCount} registrations`);
     res.json({ 
       eventCount: eventCount || 0, 
       registrationCount: regCount || 0 
     });
   } catch (err: any) {
+    console.error("[STATS] Catch error:", err);
     res.status(500).json({ error: err.message });
   }
 });

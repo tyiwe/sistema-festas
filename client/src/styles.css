@@ -188,6 +188,39 @@
   line-height: 1.5;
 }
 
+@media (max-width: 768px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
+    gap: 12px;
+    margin: 20px 0;
+    padding: 0 16px;
+  }
+  
+  .bento-card {
+    padding: 24px;
+    grid-column: span 1 !important;
+    min-height: 120px;
+    justify-content: flex-start;
+  }
+
+  .bento-card h3 {
+    font-size: 18px;
+  }
+
+  .bento-card p {
+    font-size: 14px;
+  }
+
+  .stats-row {
+    gap: 20px !important;
+  }
+
+  .stats-divider {
+    height: 40px !important;
+  }
+}
+
 /* ============================================
    EVENT CARDS — Premium Refinement
    ============================================ */

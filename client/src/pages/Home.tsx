@@ -33,7 +33,10 @@ export default function Home() {
 
     // Buscar estatísticas reais
     apiGet<{ eventCount: number, registrationCount: number }>("/public/stats")
-      .then(res => setStats(res))
+      .then(res => {
+        console.log("Stats carregadas:", res);
+        setStats(res);
+      })
       .catch(err => console.error("Erro ao carregar stats:", err));
 
     // Verificar autenticação
@@ -137,27 +140,27 @@ export default function Home() {
               <div style={{ 
                 background: 'var(--bg)', 
                 borderRadius: '24px', 
-                height: '400px', 
+                height: 'clamp(300px, 50vh, 400px)', 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 position: 'relative',
                 overflow: 'hidden'
               }}>
-                <div style={{ textAlign: 'center', zIndex: 2 }}>
-                  <div className="row center" style={{ gap: '40px' }}>
+                <div style={{ textAlign: 'center', zIndex: 2, width: '100%' }}>
+                  <div className="stats-row" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '40px' }}>
                     <div className="stack tight">
-                      <span style={{ fontSize: '48px', fontWeight: 800, letterSpacing: '-0.02em' }}>
+                      <span style={{ fontSize: 'clamp(32px, 5vw, 48px)', fontWeight: 800, letterSpacing: '-0.02em' }}>
                         {stats.eventCount > 0 ? `+${stats.eventCount}` : stats.eventCount}
                       </span>
-                      <span className="muted small uppercase" style={{ letterSpacing: '0.1em', fontWeight: 600 }}>Eventos Ativos</span>
+                      <span className="muted small uppercase" style={{ letterSpacing: '0.1em', fontWeight: 600, fontSize: 'clamp(10px, 2vw, 12px)' }}>Eventos Ativos</span>
                     </div>
-                    <div style={{ width: '1px', height: '60px', background: 'var(--border)' }} />
+                    <div className="stats-divider" style={{ width: '1px', height: '60px', background: 'var(--border)' }} />
                     <div className="stack tight">
-                      <span style={{ fontSize: '48px', fontWeight: 800, letterSpacing: '-0.02em' }}>
-                        {stats.registrationCount >= 1000 ? `${(stats.registrationCount / 1000).toFixed(1)}k` : stats.registrationCount}
+                      <span style={{ fontSize: 'clamp(32px, 5vw, 48px)', fontWeight: 800, letterSpacing: '-0.02em' }}>
+                        {stats.registrationCount >= 1000 ? `${(stats.registrationCount / 1000).toFixed(1)}k` : (stats.registrationCount || 0)}
                       </span>
-                      <span className="muted small uppercase" style={{ letterSpacing: '0.1em', fontWeight: 600 }}>Inscrições</span>
+                      <span className="muted small uppercase" style={{ letterSpacing: '0.1em', fontWeight: 600, fontSize: 'clamp(10px, 2vw, 12px)' }}>Inscrições</span>
                     </div>
                   </div>
                 </div>

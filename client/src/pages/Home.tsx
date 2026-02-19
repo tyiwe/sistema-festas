@@ -1,7 +1,17 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { apiGet } from "../api";
 import Header from "../components/Header";
 
 export default function Home() {
+  const [isAuth, setIsAuth] = useState(false);
+
+  useEffect(() => {
+    apiGet<{ authenticated: boolean }>("/user/me")
+      .then((res) => setIsAuth(!!res.authenticated))
+      .catch(() => setIsAuth(false));
+  }, []);
+
   return (
     <>
       <Header />
@@ -19,9 +29,15 @@ export default function Home() {
               </p>
 
               <div className="hero-cta">
-                <Link to="/user-auth" className="btn primary-glow large">
-                  Criar minha conta de organizador
-                </Link>
+                {isAuth ? (
+                  <Link to="/admin" className="btn primary-glow large">
+                    Ir para meu painel
+                  </Link>
+                ) : (
+                  <Link to="/user-auth" className="btn primary-glow large">
+                    Criar minha conta de organizador
+                  </Link>
+                )}
                 <button
                   className="btn hero-btn large"
                   onClick={() => {
@@ -38,6 +54,11 @@ export default function Home() {
                 <span>Focado em festas entre amigos</span>
                 <span>Funciona bem no celular</span>
               </div>
+              {isAuth && (
+                <p style={{ marginTop: "16px", fontSize: "14px", color: "var(--text-muted)" }}>
+                  Depois de criar a festa, você encontra tudo em <strong>Admin &gt; Seus eventos</strong>, com o botão para copiar o link e mandar no grupo.
+                </p>
+              )}
             </div>
 
             <div className="hero-preview">

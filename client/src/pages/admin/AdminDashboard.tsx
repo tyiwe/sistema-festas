@@ -181,6 +181,20 @@ export default function AdminDashboard() {
                           <span style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', opacity: 0.5 }}>Data:</span>
                           <span>{new Date(e.date_time).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
                         </div>
+                        <div className="row" style={{ gap: '8px', fontSize: '12px', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 600, textTransform: 'uppercase', opacity: 0.5 }}>Link da página:</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const url = `${window.location.origin}/e/${e.slug}`;
+                              navigator.clipboard?.writeText(url);
+                              alert("Link copiado! É esse endereço que você manda no grupo.");
+                            }}
+                            style={{ border: "none", padding: 0, margin: 0, background: "none", color: "var(--primary)", cursor: "pointer", textDecoration: "underline", fontSize: "12px" }}
+                          >
+                            copiar link público
+                          </button>
+                        </div>
                       </div>
                       
                       <div className="row" style={{ gap: '12px' }}>

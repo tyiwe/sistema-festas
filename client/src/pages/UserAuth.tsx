@@ -29,7 +29,6 @@ export default function UserAuth() {
   const [registerEmailConfirm, setRegisterEmailConfirm] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerFullName, setRegisterFullName] = useState("");
-  const [registerAdminCode, setRegisterAdminCode] = useState("");
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -85,7 +84,6 @@ export default function UserAuth() {
         email_confirm: registerEmailConfirm,
         password: registerPassword,
         full_name: registerFullName,
-        admin_code: registerAdminCode,
       });
       // Pequeno delay para garantir que o cookie seja processado em dispositivos móveis
       setTimeout(() => {
@@ -94,8 +92,6 @@ export default function UserAuth() {
     } catch (err: any) {
       if (err?.message?.includes("already registered")) {
         setError("Este e-mail já está cadastrado.");
-      } else if (err?.message?.includes("Invalid admin code")) {
-        setError("O código de administrador é inválido.");
       } else {
         setError(err?.message || "Erro ao realizar cadastro.");
       }
@@ -206,16 +202,6 @@ export default function UserAuth() {
                   value={registerPassword}
                   onChange={(e) => setRegisterPassword(e.target.value)}
                   required
-                />
-              </div>
-
-              <div className="field">
-                <span>Código de Organizador (Opcional)</span>
-                <input
-                  type="password"
-                  placeholder="Caso você organize eventos"
-                  value={registerAdminCode}
-                  onChange={(e) => setRegisterAdminCode(e.target.value)}
                 />
               </div>
 

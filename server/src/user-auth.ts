@@ -67,17 +67,12 @@ export function requireUserLogin(req: express.Request, res: express.Response, ne
   next();
 }
 
-// Código secreto para admin
-const ADMIN_CODE = process.env.ADMIN_CODE || "ADMIN2026";
-
-// Cadastro de usuário
 router.post("/register", async (req, res) => {
   const schema = z.object({
     email: z.string().email("E-mail inválido"),
     email_confirm: z.string().email("Confirmação de e-mail inválida"),
     password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
     full_name: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
-    admin_code: z.string().optional().default(""),
   });
 
   const parsed = schema.safeParse(req.body);
@@ -86,8 +81,7 @@ router.post("/register", async (req, res) => {
     return;
   }
 
-  const { email, email_confirm, password, full_name, admin_code } = parsed.data;
-  const isAdmin = admin_code === ADMIN_CODE;
+  const { email, email_confirm, password, full_name } = parsed.data;
 
   if (email !== email_confirm) {
     res.status(400).json({ error: "E-mails não coincidem" });
@@ -113,7 +107,7 @@ router.post("/register", async (req, res) => {
       email: email.toLowerCase(),
       password_hash: passwordHash,
       full_name,
-      is_admin: isAdmin,
+      is_admin: true,
       phone: "",
     })
     .select("id, is_admin")
@@ -126,11 +120,10 @@ router.post("/register", async (req, res) => {
 
   const token = signUserToken(newUser.id);
   
-  // CONFIGURAÇÃO DE COOKIE PARA PRODUÇÃO (CROSS-DOMAIN)
   res.cookie(USER_COOKIE, token, {
     httpOnly: true,
-    sameSite: "none", // Necessário para Netlify -> Render
-    secure: true,     // Necessário para SameSite: none
+    sameSite: "none",
+    secure: true,
     path: "/",
     maxAge: 30 * 24 * 60 * 60 * 1000,
     // @ts-ignore - partitioned is relatively new but helps with Safari/Chrome cross-site

@@ -470,12 +470,20 @@ app.post("/api/admin/upload", requireAdmin, upload.single("file"), async (req, r
   res.json({ url: data.publicUrl, path });
 });
 
-app.get("/api/admin/events", requireAdmin, async (_req, res) => {
-  const { data, error } = await supabase
+app.get("/api/admin/events", requireAdmin, async (req, res) => {
+  const userId = getUserId(req, res);
+
+  const query = supabase
     .from("events")
-    .select("id,title,slug,description,date_time,location,cover_image_url,gallery_image_urls,status,registration_deadline,capacity,created_at")
+    .select("id,title,slug,description,date_time,location,cover_image_url,gallery_image_urls,status,registration_deadline,capacity,created_at,owner_user_id")
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
+
+  if (userId && userId !== "admin") {
+    query.eq("owner_user_id", userId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     res.status(500).json({ error: error.message });
@@ -486,11 +494,18 @@ app.get("/api/admin/events", requireAdmin, async (_req, res) => {
 
 app.get("/api/admin/events/:id", requireAdmin, async (req, res) => {
   const id = String(req.params.id);
-  const { data, error } = await supabase
+  const userId = getUserId(req, res);
+
+  let query = supabase
     .from("events")
     .select("*")
-    .eq("id", id)
-    .maybeSingle();
+    .eq("id", id);
+
+  if (userId && userId !== "admin") {
+    query = query.eq("owner_user_id", userId);
+  }
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
     res.status(500).json({ error: error.message });
@@ -504,6 +519,8 @@ app.get("/api/admin/events/:id", requireAdmin, async (req, res) => {
 });
 
 app.post("/api/admin/events", requireAdmin, async (req, res) => {
+  const ownerId = getUserId(req, res);
+
   const parsed = eventUpsertSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "invalid body", details: parsed.error.flatten() });
@@ -528,13 +545,19 @@ app.post("/api/admin/events", requireAdmin, async (req, res) => {
     return;
   }
 
+  const baseEvent = {
+    ...eventData,
+    date_time: dateTimeISO,
+    registration_deadline: deadlineISO,
+  } as any;
+
+  if (ownerId && ownerId !== "admin") {
+    baseEvent.owner_user_id = ownerId;
+  }
+
   const { data: event, error } = await supabase
     .from("events")
-    .insert({
-      ...eventData,
-      date_time: dateTimeISO,
-      registration_deadline: deadlineISO,
-    })
+    .insert(baseEvent)
     .select("id")
     .single();
 
@@ -561,6 +584,7 @@ app.post("/api/admin/events", requireAdmin, async (req, res) => {
 
 app.put("/api/admin/events/:id", requireAdmin, async (req, res) => {
   const id = String(req.params.id);
+  const userId = getUserId(req, res);
   console.log(`[PUT] /api/admin/events/${id} - Body:`, JSON.stringify(req.body));
   
   const parsed = eventUpsertSchema.omit({ create_default_drinks: true }).partial().safeParse(req.body);
@@ -582,10 +606,16 @@ app.put("/api/admin/events/:id", requireAdmin, async (req, res) => {
 
   console.log(`[PUT] Updating Supabase with:`, JSON.stringify(updateData));
 
-  const { error } = await supabase
+  const query = supabase
     .from("events")
     .update(updateData)
     .eq("id", id);
+
+  if (userId && userId !== "admin") {
+    query.eq("owner_user_id", userId);
+  }
+
+  const { error } = await query;
 
   if (error) {
     console.error(`[PUT] Supabase error:`, error.message);
@@ -599,10 +629,18 @@ app.put("/api/admin/events/:id", requireAdmin, async (req, res) => {
 
 app.delete("/api/admin/events/:id", requireAdmin, async (req, res) => {
   const id = String(req.params.id);
-  const { error } = await supabase
+  const userId = getUserId(req, res);
+
+  const query = supabase
     .from("events")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
+
+  if (userId && userId !== "admin") {
+    query.eq("owner_user_id", userId);
+  }
+
+  const { error } = await query;
 
   if (error) {
     res.status(500).json({ error: error.message });

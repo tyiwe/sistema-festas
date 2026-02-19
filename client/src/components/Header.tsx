@@ -92,12 +92,11 @@ export default function Header({ showLogout = false, title }: HeaderProps) {
           </Link>
 
           <nav className="nav desktop-only">
-            {!showLogout && <Link to="/" className="nav-link">Eventos</Link>}
+            {!showLogout && <Link to="/" className="nav-link">Início</Link>}
             
             {!loadingAuth && userLoggedIn && (
               <>
                 <Link to="/profile" className="nav-link">Perfil</Link>
-                <Link to="/my-registrations" className="nav-link">Inscrições</Link>
                 {isAdmin && (
                   <Link to="/admin" className="nav-link">Admin</Link>
                 )}
@@ -132,7 +131,7 @@ export default function Header({ showLogout = false, title }: HeaderProps) {
           <nav className="mobile-nav">
             {!showLogout && (
               <Link to="/" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>
-                Eventos
+                Início
               </Link>
             )}
             
@@ -140,9 +139,6 @@ export default function Header({ showLogout = false, title }: HeaderProps) {
               <>
                 <Link to="/profile" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>
                   Perfil
-                </Link>
-                <Link to="/my-registrations" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>
-                  Inscrições
                 </Link>
                 {isAdmin && (
                   <Link to="/admin" className="mobile-nav-link" onClick={() => setIsMenuOpen(false)}>

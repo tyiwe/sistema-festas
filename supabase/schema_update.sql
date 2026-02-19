@@ -18,3 +18,6 @@ ALTER TABLE registrations ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_registrations_user_id ON registrations(user_id);
 CREATE INDEX IF NOT EXISTS idx_registrations_user_event ON registrations(user_id, event_id);
+
+-- Dono do evento
+ALTER TABLE events ADD COLUMN IF NOT EXISTS owner_user_id UUID REFERENCES users(id) ON DELETE SET NULL;

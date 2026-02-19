@@ -61,3 +61,6 @@ CREATE INDEX IF NOT EXISTS idx_registration_selections_option_id ON registration
 
 -- Ajuste para projetos que já existiam sem gallery_image_urls
 ALTER TABLE events ADD COLUMN IF NOT EXISTS gallery_image_urls TEXT[] DEFAULT '{}';
+
+-- Dono do evento
+ALTER TABLE events ADD COLUMN IF NOT EXISTS owner_user_id UUID REFERENCES users(id) ON DELETE SET NULL;

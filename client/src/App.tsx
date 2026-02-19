@@ -4,7 +4,6 @@ import { apiGet } from "./api";
 import Home from "./pages/Home";
 import EventPublic from "./pages/EventPublic";
 import UserAuth from "./pages/UserAuth";
-import MyRegistrations from "./pages/MyRegistrations";
 import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminEventForm from "./pages/admin/AdminEventForm";
@@ -61,7 +60,6 @@ export default function App() {
       <Route path="/user-auth" element={<UserAuth />} />
 
       {/* Rotas de Usuário Logado */}
-      <Route path="/my-registrations" element={<PrivateRoute element={<MyRegistrations />} />} />
       <Route path="/profile" element={<PrivateRoute element={<Profile />} />} />
 
       {/* Rotas Administrativas */}

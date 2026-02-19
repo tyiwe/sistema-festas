@@ -165,8 +165,8 @@ export default function Profile() {
           </div>
 
           <div className="row center" style={{ gap: '16px', marginTop: '24px' }}>
-            <Link to="/my-registrations" className="btn secondary">Ver Inscrições</Link>
             <Link to="/" className="btn secondary">Voltar ao Início</Link>
+            <Link to="/admin" className="btn secondary">Ir para o Painel</Link>
           </div>
         </main>
       </div>

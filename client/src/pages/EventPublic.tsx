@@ -317,10 +317,7 @@ export default function EventPublic() {
                     <p style={{ color: 'var(--text-muted)', marginBottom: '32px', maxWidth: '400px', margin: '0 auto 32px' }}>
                       Você já está na lista! Agora é só preparar o look e aproveitar a festa.
                     </p>
-                    <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-                      <Link to="/my-registrations" className="btn primary">Ver Meu Ingresso</Link>
-                      <Link to="/" className="btn secondary">Ver Outros Eventos</Link>
-                    </div>
+                    <Link to="/" className="btn primary">Voltar ao Início</Link>
                   </div>
                 ) : (
                   <>
